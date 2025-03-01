@@ -28,7 +28,7 @@ from sklearn.preprocessing import label_binarize
 from config import *
 
 
-def save_roc_multiclass(y_true, y_pred_prob, name: str):
+def save_roc_multiclass(y_true, y_pred_prob, name: str, alias: str =''):
     n_classes = len(np.unique(y_true))
 
     y_true_bin = label_binarize(y_true, classes=[0, 1, 2, 3, 4])
@@ -50,16 +50,16 @@ def save_roc_multiclass(y_true, y_pred_prob, name: str):
         continue
       fpr_tpr = pd.DataFrame({"fpr": fpr[key], "tpr": tpr[key]})
 
-      fpr_tpr.to_excel(f"fpr_tpr_{name}_class_{LABEL_CONVERTER[str(key)]}.xlsx", index=False)
+      fpr_tpr.to_excel(f"fpr_tpr_{name}_{alias}_class_{LABEL_CONVERTER[str(key)]}.xlsx", index=False)
 
     auc_df = pd.DataFrame(roc_auc)
-    auc_df.to_excel(f"auc_{name}_all_class.xlsx", index=False)
+    auc_df.to_excel(f"auc_{name}_{alias}_all_class.xlsx", index=False)
 
     fpr_tpr = pd.DataFrame({"fpr": fpr["micro"], "tpr": tpr["micro"]})
-    fpr_tpr.to_excel(f"fpr_tpr_{name}_micro.xlsx", index=False)
+    fpr_tpr.to_excel(f"fpr_tpr_{name}_{alias}_micro.xlsx", index=False)
 
     fpr_tpr_auc = pd.DataFrame({"fpr": fpr["micro"], "tpr": tpr["micro"], "auc":roc_auc["micro"]})
-    fpr_tpr_auc.to_excel(f"fpr_tpr_auc_{name}_micro.xlsx", index=False)
+    fpr_tpr_auc.to_excel(f"fpr_tpr_auc_{name}_{alias}_micro.xlsx", index=False)
 
     return fpr, tpr, roc_auc
 
