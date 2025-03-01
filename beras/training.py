@@ -16,22 +16,74 @@ from preprocessing import Preprocessing
 from utils import save_roc_multiclass
 from config import LABEL_CONVERTER
 
-import warnings
-
-warnings.filterwarnings("ignore")
-
 class TrainingNoSplit:
     def __init__(
             self, 
             train_preprocessing: Preprocessing, 
             val_preprocessing: Preprocessing,
             test_preprocessing: Preprocessing, 
-            model_name: dict[str, dict]):
+            model_name: dict[str, dict],
+            alias: str = ''):
         # private
+        self.__alias = alias
         self.__train_preprocessing = train_preprocessing
         self.__val_preprocessing = val_preprocessing
         self.__test_preprocessing = test_preprocessing
         self.__model_name = model_name
+
+    def __calc_roc_auc(self, y_true, y_pred_prob):
+      n_classes = len(np.unique(y_true))
+
+      y_true_bin = label_binarize(y_true, classes=[0, 1, 2, 3, 4])
+
+      fpr = dict()
+      tpr = dict()
+      roc_auc = dict()
+
+      for i in range(n_classes):
+          fpr[i], tpr[i], _ = roc_curve(y_true_bin[:, i], y_pred_prob[:, i])
+          roc_auc[i] = [roc_auc_score(y_true_bin[:, i], y_pred_prob[:, i])]
+
+      # Compute micro-average ROC curve and ROC area
+      fpr["micro"], tpr["micro"], _ = roc_curve(y_true_bin.ravel(), y_pred_prob.ravel())
+      roc_auc["micro"] = roc_auc_score(y_true_bin, y_pred_prob, average="micro")
+
+      return fpr, tpr, roc_auc
+
+    def __plot_roc_auc(self, train, val, test, name: str):
+      fpr_train = train["fpr"]
+      tpr_train = train["tpr"]
+      roc_auc_train = train["roc_auc"]
+
+      fpr_val = val["fpr"]
+      tpr_val = val["tpr"]
+      roc_auc_val = val["roc_auc"]
+
+      fpr_test = test["fpr"]
+      tpr_test = test["tpr"]
+      roc_auc_test = test["roc_auc"]
+      
+      plt.figure(figsize=(8, 6))
+      plt.plot([0, 1], [0, 1], 'k--', lw=2)  # Diagonal line
+
+      #Plot for each set
+      for fpr, tpr, roc_auc, set_name in zip(
+          [fpr_train, fpr_val, fpr_test], 
+           [tpr_train, tpr_val, tpr_test], 
+            [roc_auc_train, roc_auc_val, roc_auc_test], 
+             ['train','val','test']):
+          
+          plt.plot(fpr["micro"], tpr["micro"],
+              label=f'micro-average {set_name} ROC curve (area = {roc_auc["micro"]:0.2f})')
+      
+      plt.xlim([0.0, 1.0])
+      plt.ylim([0.0, 1.05])
+      plt.xlabel('False Positive Rate')
+      plt.ylabel('True Positive Rate')
+      plt.title(f'Receiver operating characteristic {name} {self.__alias}')
+      plt.savefig(f"{name}_roc_auc.png")
+      plt.legend(loc="lower right")
+      plt.show()
 
     def train_test_method_grid_search(self, cv):
         X_train = self.__train_preprocessing.get_X()
@@ -114,6 +166,18 @@ class TrainingNoSplit:
             save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_train")
             save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_val")
             save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_test") 
+
+            # plot roc auc
+            fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, mdl.predict_proba(X_train))
+            fpr_val, tpr_val, roc_auc_val = self.__calc_roc_auc(y_val, mdl.predict_proba(X_val))
+            fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, mdl.predict_proba(X_test))
+
+            self.__plot_roc_auc(
+                train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train}, 
+                val={"fpr": fpr_val, "tpr": tpr_val, "roc_auc": roc_auc_val},
+                test={"fpr": fpr_test, "tpr": tpr_test, "roc_auc": roc_auc_test},
+                name=name
+            )
         
     def train_test_method(self):
         X_train = self.__train_preprocessing.get_X()
@@ -147,7 +211,7 @@ class TrainingNoSplit:
                 imp = imp.reshape((1, imp.shape[0]))
 
             imp = pd.DataFrame(imp)
-            imp.to_excel(f"{name}_coef_feature_importance.xlsx", index=False)
+            imp.to_excel(f"{name}_{self.__alias}_coef_feature_importance.xlsx", index=False)
 
             # TRAIN
             y_pred_train = mdl.predict(X_train)
@@ -200,25 +264,38 @@ class TrainingNoSplit:
             confusion_matrix_test = pd.DataFrame(confusion_matrix_test)
 
             # save to excel
-            train_metrics.to_excel(f"{name}_train_metric.xlsx", index=False)
-            confusion_matrix_train.to_excel(f"{name}_confusion_matrix_train.xlsx", index=False)
+            train_metrics.to_excel(f"{name}_{self.__alias}_train_metric.xlsx", index=False)
+            confusion_matrix_train.to_excel(f"{name}_{self.__alias}_confusion_matrix_train.xlsx", index=False)
 
-            val_metrics.to_excel(f"{name}_val_metric.xlsx", index=False)
-            confusion_matrix_val.to_excel(f"{name}_confusion_matrix_val.xlsx", index=False)
+            val_metrics.to_excel(f"{name}_{self.__alias}_val_metric.xlsx", index=False)
+            confusion_matrix_val.to_excel(f"{name}_{self.__alias}_confusion_matrix_val.xlsx", index=False)
             
-            test_metrics.to_excel(f"{name}_test_metric.xlsx", index=False)
-            confusion_matrix_test.to_excel(f"{name}_confusion_matrix_test.xlsx", index=False)
+            test_metrics.to_excel(f"{name}_{self.__alias}_test_metric.xlsx", index=False)
+            confusion_matrix_test.to_excel(f"{name}_{self.__alias}_confusion_matrix_test.xlsx", index=False)
 
             # save roc
-            save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_train")
-            save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_val")
-            save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_test")
+            save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{self.__alias}_train")
+            save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{self.__alias}_val")
+            save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{self.__alias}_test")
+
+            # plot roc auc
+            fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, mdl.predict_proba(X_train))
+            fpr_val, tpr_val, roc_auc_val = self.__calc_roc_auc(y_val, mdl.predict_proba(X_val))
+            fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, mdl.predict_proba(X_test))
+
+            self.__plot_roc_auc(
+                train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train}, 
+                val={"fpr": fpr_val, "tpr": tpr_val, "roc_auc": roc_auc_val},
+                test={"fpr": fpr_test, "tpr": tpr_test, "roc_auc": roc_auc_test},
+                name=name
+            )
 
 class Training:
-    def __init__(self, preprocessing: Preprocessing, model_name: dict[str, dict]):
+    def __init__(self, preprocessing: Preprocessing, model_name: dict[str, dict], alias:str =''):
         # private
         self.__preprocessing = preprocessing
         self.__model_name = model_name
+        self.__alias = alias
 
         # public
         self.X = self.__preprocessing.get_X()
@@ -286,19 +363,31 @@ class Training:
             confusion_matrix_test = pd.DataFrame(confusion_matrix_test)
 
             # save to excel
-            train_metrics.to_excel(f"{name}_train_metric.xlsx", index=False)
-            confusion_matrix_train.to_excel(f"{name}_confusion_matrix_train.xlsx", index=False)
+            train_metrics.to_excel(f"{name}_{self.__alias}_train_metric.xlsx", index=False)
+            confusion_matrix_train.to_excel(f"{name}_{self.__alias}_confusion_matrix_train.xlsx", index=False)
 
-            val_metrics.to_excel(f"{name}_val_metric.xlsx", index=False)
-            confusion_matrix_val.to_excel(f"{name}_confusion_matrix_val.xlsx", index=False)
+            val_metrics.to_excel(f"{name}_{self.__alias}_val_metric.xlsx", index=False)
+            confusion_matrix_val.to_excel(f"{name}_{self.__alias}_confusion_matrix_val.xlsx", index=False)
             
-            test_metrics.to_excel(f"{name}_test_metric.xlsx", index=False)
-            confusion_matrix_test.to_excel(f"{name}_confusion_matrix_test.xlsx", index=False)
+            test_metrics.to_excel(f"{name}_{self.__alias}_test_metric.xlsx", index=False)
+            confusion_matrix_test.to_excel(f"{name}_{self.__alias}_confusion_matrix_test.xlsx", index=False)
 
             # save roc
-            save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_train")
-            save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_val")
-            save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_test") 
+            save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{self.__alias}_train")
+            save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{self.__alias}_val")
+            save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{self.__alias}_test") 
+
+            # plot roc auc
+            fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, mdl.predict_proba(X_train))
+            fpr_val, tpr_val, roc_auc_val = self.__calc_roc_auc(y_val, mdl.predict_proba(X_val))
+            fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, mdl.predict_proba(X_test))
+
+            self.__plot_roc_auc(
+                train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train}, 
+                val={"fpr": fpr_val, "tpr": tpr_val, "roc_auc": roc_auc_val},
+                test={"fpr": fpr_test, "tpr": tpr_test, "roc_auc": roc_auc_test},
+                name=name
+            )
 
     def validate_kfold(self, n_splits: int):
         model = {}
@@ -368,11 +457,11 @@ class Training:
                 confusion_matrix_test = pd.DataFrame(confusion_matrix_test)
 
                 # save to excel
-                train_metrics.to_excel(f"{name}_train_split_{fold+1}_metric.xlsx", index=False)
-                confusion_matrix_train.to_excel(f"{name}_train_split_{fold+1}_confusion_matrix.xlsx", index=False)
+                train_metrics.to_excel(f"{name}_{self.__alias}_train_split_{fold+1}_metric.xlsx", index=False)
+                confusion_matrix_train.to_excel(f"{name}_{self.__alias}_train_split_{fold+1}_confusion_matrix.xlsx", index=False)
                 
-                test_metrics.to_excel(f"{name}_test_split_{fold+1}_metric.xlsx", index=False)
-                confusion_matrix_test.to_excel(f"{name}_test_split_{fold+1}_confusion_matrix.xlsx", index=False)
+                test_metrics.to_excel(f"{name}_{self.__alias}_test_split_{fold+1}_metric.xlsx", index=False)
+                confusion_matrix_test.to_excel(f"{name}_{self.__alias}_test_split_{fold+1}_confusion_matrix.xlsx", index=False)
 
     def __calc_roc_auc(self, y_true, y_pred_prob):
       n_classes = len(np.unique(y_true))
@@ -423,7 +512,7 @@ class Training:
       plt.ylim([0.0, 1.05])
       plt.xlabel('False Positive Rate')
       plt.ylabel('True Positive Rate')
-      plt.title(f'Receiver operating characteristic {name}')
+      plt.title(f'Receiver operating characteristic {name} {self.__alias}')
       plt.savefig(f"{name}_roc_auc.png")
       plt.legend(loc="lower right")
       plt.show()
@@ -455,7 +544,7 @@ class Training:
                 imp = imp.reshape((1, imp.shape[0]))
 
             imp = pd.DataFrame(imp)
-            imp.to_excel(f"{name}_coef_feature_importance.xlsx", index=False)
+            imp.to_excel(f"{name}_{self.__alias}_coef_feature_importance.xlsx", index=False)
 
             # TRAIN
             y_pred_train = mdl.predict(X_train)
@@ -508,19 +597,19 @@ class Training:
             confusion_matrix_test = pd.DataFrame(confusion_matrix_test)
 
             # save to excel
-            train_metrics.to_excel(f"{name}_train_metric.xlsx", index=False)
-            confusion_matrix_train.to_excel(f"{name}_confusion_matrix_train.xlsx", index=False)
+            train_metrics.to_excel(f"{name}_{self.__alias}_train_metric.xlsx", index=False)
+            confusion_matrix_train.to_excel(f"{name}_{self.__alias}_confusion_matrix_train.xlsx", index=False)
 
-            val_metrics.to_excel(f"{name}_val_metric.xlsx", index=False)
-            confusion_matrix_val.to_excel(f"{name}_confusion_matrix_val.xlsx", index=False)
+            val_metrics.to_excel(f"{name}_{self.__alias}_val_metric.xlsx", index=False)
+            confusion_matrix_val.to_excel(f"{name}_{self.__alias}_confusion_matrix_val.xlsx", index=False)
             
-            test_metrics.to_excel(f"{name}_test_metric.xlsx", index=False)
-            confusion_matrix_test.to_excel(f"{name}_confusion_matrix_test.xlsx", index=False)
+            test_metrics.to_excel(f"{name}_{self.__alias}_test_metric.xlsx", index=False)
+            confusion_matrix_test.to_excel(f"{name}_{self.__alias}_confusion_matrix_test.xlsx", index=False)
 
             # save roc
-            save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_train")
-            save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_val")
-            save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_test")
+            save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{self.__alias}_train")
+            save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{self.__alias}_val")
+            save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{self.__alias}_test")
 
             # plot roc auc
             fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, mdl.predict_proba(X_train))
