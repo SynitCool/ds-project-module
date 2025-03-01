@@ -10,6 +10,9 @@ from utils import *
 from config import *
 from dataset import *
 
+import warnings
+
+warnings.filterwarnings("ignore")
 
 class Preprocessing:
     def __init__(self, 
