@@ -60,7 +60,6 @@ class Dataset:
                 filename = f"{fname}_{segment}.{format}"
 
                 try:
-                    print(f"Segmenting {segment} for {image}")
                     if segment == "canny":
                         segment_img = segment_func[segment](gray_image)
                     elif segment == "rcnn":
