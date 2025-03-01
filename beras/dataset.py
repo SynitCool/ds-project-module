@@ -18,12 +18,13 @@ import warnings
 warnings.filterwarnings("ignore")
 
 class Dataset:
-    def __init__(self, src_folder: str):
+    def __init__(self, src_folder: str, alias: str=''):
         # public
         self.src_folder = src_folder
         
         # private
         self.__images = []
+        self.__alias = alias
 
         self.__get_all_images()    
 
@@ -60,6 +61,7 @@ class Dataset:
                 filename = f"{fname}_{segment}.{format}"
 
                 try:
+                    print(f"Segmenting {segment} for {image}")
                     if segment == "canny":
                         segment_img = segment_func[segment](gray_image)
                     elif segment == "rcnn":
@@ -114,7 +116,7 @@ class Dataset:
           plt.title('Faster R-CNN Segmentation')
 
       plt.tight_layout()
-      plt.savefig("plot_segmentation.png")
+      plt.savefig(f"plot_{self.__alias}_segmentation.png")
       plt.show()
 
     def plot_augmentation(self, augmentation: dict):
@@ -140,7 +142,7 @@ class Dataset:
         plt.title(f'{name} Augmentation')
 
         plt.tight_layout()
-        plt.savefig(f"plot_{name}_augmentation.png")
+        plt.savefig(f"plot_{name}_{self.__alias}_augmentation.png")
         plt.show()
 
 
