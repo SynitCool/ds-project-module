@@ -81,7 +81,7 @@ class TrainingNoSplit:
       plt.xlabel('False Positive Rate')
       plt.ylabel('True Positive Rate')
       plt.title(f'Receiver operating characteristic {name} {self.__alias}')
-      plt.savefig(f"{name}_roc_auc.png")
+      plt.savefig(f"{name}_{self.__alias}_roc_auc.png")
       plt.legend(loc="lower right")
       plt.show()
 
@@ -513,7 +513,7 @@ class Training:
       plt.xlabel('False Positive Rate')
       plt.ylabel('True Positive Rate')
       plt.title(f'Receiver operating characteristic {name} {self.__alias}')
-      plt.savefig(f"{name}_roc_auc.png")
+      plt.savefig(f"{name}_{self.__alias}_roc_auc.png")
       plt.legend(loc="lower right")
       plt.show()
 
