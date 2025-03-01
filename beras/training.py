@@ -16,6 +16,10 @@ from preprocessing import Preprocessing
 from utils import save_roc_multiclass
 from config import LABEL_CONVERTER
 
+import warnings
+
+warnings.filterwarnings("ignore")
+
 class TrainingNoSplit:
     def __init__(
             self, 
