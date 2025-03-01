@@ -10,22 +10,21 @@ from utils import *
 from config import *
 from dataset import *
 
-import warnings
-
-warnings.filterwarnings("ignore")
 
 class Preprocessing:
     def __init__(self, 
                  dataset: Dataset, 
                  extractions: list[str] = None,
                  feature_selected: bool = False,
-                 n_components: int = 10):
+                 n_components: int = 10,
+                 alias: str = ''):
         
         # private
         self.__dataset = dataset
         self.__extractions = extractions
         self.__feature_selected = feature_selected
         self.__n_components = n_components
+        self.__alias = alias
         self.__X = []
         self.__y = []
 
@@ -97,7 +96,7 @@ class Preprocessing:
       plt.xlabel('Data')
       plt.ylabel('Frequency')
 
-      plt.savefig("save_histogram.png")
+      plt.savefig(f"save_{self.__alias}_histogram.png")
       plt.show()
 
     def get_X(self):
