@@ -34,7 +34,7 @@ class TrainingNoSplit:
     def __calc_roc_auc(self, y_true, y_pred_prob):
       n_classes = len(np.unique(y_true))
 
-      y_true_bin = label_binarize(y_true, classes=[0, 1, 2, 3, 4])
+      y_true_bin = label_binarize(y_true, classes=[i for i in range(n_classes)])
 
       fpr = dict()
       tpr = dict()
@@ -466,7 +466,7 @@ class Training:
     def __calc_roc_auc(self, y_true, y_pred_prob):
       n_classes = len(np.unique(y_true))
 
-      y_true_bin = label_binarize(y_true, classes=[0, 1, 2, 3, 4])
+      y_true_bin = label_binarize(y_true, classes=[i for i in range(n_classes)])
 
       fpr = dict()
       tpr = dict()
