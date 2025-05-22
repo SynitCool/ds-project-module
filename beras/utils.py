@@ -31,7 +31,7 @@ from config import *
 def save_roc_multiclass(y_true, y_pred_prob, name: str):
     n_classes = len(np.unique(y_true))
 
-    y_true_bin = label_binarize(y_true, classes=[0, 1, 2, 3, 4])
+    y_true_bin = label_binarize(y_true, classes=[i for i in range(n_classes)])
 
     fpr = dict()
     tpr = dict()
