@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 
 from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score, confusion_matrix
 from sklearn.svm import SVC
@@ -11,12 +12,23 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.preprocessing import label_binarize
 
+from torch.utils.data import DataLoader, TensorDataset
+
+from model import SimpleCNN
+
 from preprocessing import Preprocessing
 
 from utils import save_roc_multiclass
+
 from config import LABEL_CONVERTER
 from config import TRAIN_70_30_PORTION
 from config import VAL_TEST_70_30_PORTION
+from config import BATCH_SIZE
+from config import EPOCHS
+from config import LR
+
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class TrainingNoSplit:
     def __init__(
@@ -199,6 +211,8 @@ class TrainingNoSplit:
                 model[name] = SVC(probability=True)
             elif name == "RF":
                 model[name] = RandomForestClassifier()
+            elif name == "CNN":
+                print("CNN is not supported for train test method for no split")
 
         for name, mdl in model.items():
             mdl.fit(X_train, y_train)
@@ -308,6 +322,7 @@ class Training:
         X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=VAL_TEST_70_30_PORTION, random_state=42) 
 
         model = {}
+
         for name, spec in self.__model_name.items():
             model[name] = GridSearchCV(spec["model"], spec["param"], cv=cv)
 
@@ -400,6 +415,8 @@ class Training:
                 model[name] = SVC(probability=True)
             elif name == "RF":
                 model[name] = RandomForestClassifier()
+            elif name == "CNN":
+                print("CNN is not supported for K-Fold validation")
 
         kf = KFold(n_splits=n_splits)
         for name, mdl in model.items():
@@ -519,7 +536,6 @@ class Training:
       plt.legend(loc="lower right")
       plt.show()
 
-
     def train_test_method(self):
         X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=TRAIN_70_30_PORTION, random_state=42) 
         X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=VAL_TEST_70_30_PORTION, random_state=42) 
@@ -532,9 +548,42 @@ class Training:
                 model[name] = SVC(probability=True)
             elif name == "RF":
                 model[name] = RandomForestClassifier()
+            elif name == "CNN":
+                input_shape = self.X.shape[1:][::-1] 
+                model[name] = SimpleCNN(input_size=input_shape, num_classes=len(np.unique(self.y)))
 
         for name, mdl in model.items():
-            mdl.fit(X_train, y_train)
+            if name == "CNN":
+                X_train_CNN = X_train.reshape((X_train.shape[0], *X_train.shape[1:]))
+                X_val_CNN = X_val.reshape((X_val.shape[0], *X_val.shape[1:]))
+                X_test_CNN = X_test.reshape((X_test.shape[0], *X_test.shape[1:]))
+
+                X_train_CNN = torch.from_numpy(X_train_CNN).to(device)
+                X_val_CNN = torch.from_numpy(X_val_CNN).to(device)
+                X_test_CNN = torch.from_numpy(X_test_CNN).to(device)
+
+                y_train_CNN = torch.from_numpy(y_train).to(device)
+                y_val_CNN = torch.from_numpy(y_val).to(device)
+                y_test_CNN = torch.from_numpy(y_test).to(device)
+            
+            # Fit Model
+            if name == "CNN":
+                dataset = TensorDataset(X_train_CNN, y_train_CNN)
+                train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
+
+                criterion = nn.CrossEntropyLoss()
+                optimizer = torch.optim.Adam(mdl.parameters(), lr=LR)
+
+                mdl.train_model(
+                    train_loader=train_loader,
+                    criterion=criterion,
+                    optimizer=optimizer,
+                    epochs=EPOCHS,
+                    device=device
+                )
+            else:
+                mdl.fit(X_train, y_train)
+
 
             # Coef & Feature Important
             if name == "LogisticRegression":
@@ -544,12 +593,20 @@ class Training:
             elif name == "RF":
                 imp = mdl.feature_importances_
                 imp = imp.reshape((1, imp.shape[0]))
+            elif name == "CNN":
+                imp = [param.data.cpu().numpy() for param in mdl.parameters()]
+                imp = np.concatenate(imp, axis=0).reshape((1, -1))
 
             imp = pd.DataFrame(imp)
             imp.to_excel(f"{name}_{self.__alias}_coef_feature_importance.xlsx", index=False)
 
             # TRAIN
-            y_pred_train = mdl.predict(X_train)
+            if name == "CNN":
+                sample_inputs, _ = next(iter(train_loader))
+                y_pred_train = mdl.predict(sample_inputs, device=device)
+            else:
+                y_pred_train = mdl.predict(X_train)
+            
             train_metrics = {
                 "Accuracy": [accuracy_score(y_train, y_pred_train)]
             }
@@ -567,7 +624,13 @@ class Training:
             confusion_matrix_train = pd.DataFrame(confusion_matrix_train)
 
             # VAL
-            y_pred_val = mdl.predict(X_val)
+            if name == "CNN":
+                val_loader = DataLoader(TensorDataset(X_val_CNN, y_val_CNN), batch_size=BATCH_SIZE, shuffle=False)
+                sample_val, _ = next(iter(val_loader))
+                y_pred_val = mdl.predict(sample_val, device=device)
+            else:
+                y_pred_val = mdl.predict(X_val)
+
             val_metrics = {
                 "Accuracy": [accuracy_score(y_val, y_pred_val)]
             }
@@ -583,7 +646,14 @@ class Training:
             confusion_matrix_val = pd.DataFrame(confusion_matrix_val)
             
             # TEST
-            y_pred_test = mdl.predict(X_test)
+            # VAL
+            if name == "CNN":
+                test_loader = DataLoader(TensorDataset(X_test_CNN, y_test_CNN), batch_size=BATCH_SIZE, shuffle=False)
+                sample_test, _ = next(iter(test_loader))
+                y_pred_test = mdl.predict(sample_test, device=device)
+            else:
+                y_pred_test = mdl.predict(X_test)
+                
             test_metrics = {
                 "Accuracy": [accuracy_score(y_test, y_pred_test)],
             }
