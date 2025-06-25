@@ -614,7 +614,7 @@ class Training:
                 sample_inputs, _ = next(iter(train_loader))
                 y_pred_train = mdl.predict(sample_inputs, device=device)
             else:
-                y_pred_train = mdl.predict(X_train)
+                y_pred_train, y_pred_train_output = mdl.predict(X_train)
             
             train_metrics = {
                 "Accuracy": [accuracy_score(y_train, y_pred_train)]
@@ -638,7 +638,7 @@ class Training:
                 sample_val, _ = next(iter(val_loader))
                 y_pred_val = mdl.predict(sample_val, device=device)
             else:
-                y_pred_val = mdl.predict(X_val)
+                y_pred_val, y_pred_val_output = mdl.predict(X_val)
 
             val_metrics = {
                 "Accuracy": [accuracy_score(y_val, y_pred_val)]
@@ -661,7 +661,7 @@ class Training:
                 sample_test, _ = next(iter(test_loader))
                 y_pred_test = mdl.predict(sample_test, device=device)
             else:
-                y_pred_test = mdl.predict(X_test)
+                y_pred_test , y_pred_test_output= mdl.predict(X_test)
                 
             test_metrics = {
                 "Accuracy": [accuracy_score(y_test, y_pred_test)],
@@ -688,14 +688,24 @@ class Training:
             confusion_matrix_test.to_excel(f"{name}_{self.__alias}_confusion_matrix_test.xlsx", index=False)
 
             # save roc
-            save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{self.__alias}_train")
-            save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{self.__alias}_val")
-            save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{self.__alias}_test")
+            if name == "CNN":
+                save_roc_multiclass(y_train, y_pred_train_output, f"{name}_{self.__alias}_train")
+                save_roc_multiclass(y_val, y_pred_val_output, f"{name}_{self.__alias}_val")
+                save_roc_multiclass(y_test, y_pred_test_output, f"{name}_{self.__alias}_test")
+            else:
+                save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{self.__alias}_train")
+                save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{self.__alias}_val")
+                save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{self.__alias}_test")
 
             # plot roc auc
-            fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, mdl.predict_proba(X_train))
-            fpr_val, tpr_val, roc_auc_val = self.__calc_roc_auc(y_val, mdl.predict_proba(X_val))
-            fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, mdl.predict_proba(X_test))
+            if name == "CNN":
+                fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, y_pred_train_output)
+                fpr_val, tpr_val, roc_auc_val = self.__calc_roc_auc(y_val, y_pred_val_output)
+                fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, y_pred_test_output)
+            else:
+                fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, mdl.predict_proba(X_train))
+                fpr_val, tpr_val, roc_auc_val = self.__calc_roc_auc(y_val, mdl.predict_proba(X_val))
+                fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, mdl.predict_proba(X_test))
 
             self.__plot_roc_auc(
                 train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train}, 
