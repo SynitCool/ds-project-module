@@ -612,9 +612,9 @@ class Training:
             # TRAIN
             if name == "CNN":
                 sample_inputs, _ = next(iter(train_loader))
-                y_pred_train = mdl.predict(sample_inputs, device=device)
+                y_pred_train, y_pred_train_output = mdl.predict(sample_inputs, device=device)
             else:
-                y_pred_train, y_pred_train_output = mdl.predict(X_train)
+                y_pred_train = mdl.predict(X_train)
             
             train_metrics = {
                 "Accuracy": [accuracy_score(y_train, y_pred_train)]
@@ -636,9 +636,9 @@ class Training:
             if name == "CNN":
                 val_loader = DataLoader(TensorDataset(X_val_CNN, y_val_CNN), batch_size=BATCH_SIZE, shuffle=False)
                 sample_val, _ = next(iter(val_loader))
-                y_pred_val = mdl.predict(sample_val, device=device)
+                y_pred_val, y_pred_val_output = mdl.predict(sample_val, device=device)
             else:
-                y_pred_val, y_pred_val_output = mdl.predict(X_val)
+                y_pred_val = mdl.predict(X_val)
 
             val_metrics = {
                 "Accuracy": [accuracy_score(y_val, y_pred_val)]
@@ -659,9 +659,9 @@ class Training:
             if name == "CNN":
                 test_loader = DataLoader(TensorDataset(X_test_CNN, y_test_CNN), batch_size=BATCH_SIZE, shuffle=False)
                 sample_test, _ = next(iter(test_loader))
-                y_pred_test = mdl.predict(sample_test, device=device)
+                y_pred_test, y_pred_test_output = mdl.predict(sample_test, device=device)
             else:
-                y_pred_test , y_pred_test_output= mdl.predict(X_test)
+                y_pred_test = mdl.predict(X_test)
                 
             test_metrics = {
                 "Accuracy": [accuracy_score(y_test, y_pred_test)],
