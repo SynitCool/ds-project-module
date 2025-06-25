@@ -558,7 +558,7 @@ class Training:
             elif name == "RF":
                 model[name] = RandomForestClassifier()
             elif name == "CNN":
-                input_shape = self.X.shape[1:][::-1] 
+                input_shape = self.X_CNN.shape[1:][::-1] 
                 model[name] = SimpleCNN(input_size=input_shape, num_classes=len(np.unique(self.y)))
 
         for name, mdl in model.items():
