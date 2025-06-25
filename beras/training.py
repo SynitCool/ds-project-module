@@ -15,6 +15,8 @@ from preprocessing import Preprocessing
 
 from utils import save_roc_multiclass
 from config import LABEL_CONVERTER
+from config import TRAIN_70_30_PORTION
+from config import VAL_TEST_70_30_PORTION
 
 class TrainingNoSplit:
     def __init__(
@@ -302,8 +304,8 @@ class Training:
         self.y = self.__preprocessing.get_y()
 
     def train_test_method_grid_search(self, cv):
-        X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=0.3, random_state=42) 
-        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42) 
+        X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=TRAIN_70_30_PORTION, random_state=42) 
+        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=VAL_TEST_70_30_PORTION, random_state=42) 
 
         model = {}
         for name, spec in self.__model_name.items():
@@ -519,8 +521,8 @@ class Training:
 
 
     def train_test_method(self):
-        X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=0.3, random_state=42) 
-        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42) 
+        X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=TRAIN_70_30_PORTION, random_state=42) 
+        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=VAL_TEST_70_30_PORTION, random_state=42) 
 
         model = {}
         for name in self.__model_name:
