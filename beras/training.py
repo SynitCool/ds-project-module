@@ -13,6 +13,7 @@ from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.preprocessing import label_binarize
 
 from torch.utils.data import DataLoader, TensorDataset
+from torch import nn
 
 from model import SimpleCNN
 
@@ -317,6 +318,9 @@ class Training:
         self.X = self.__preprocessing.get_X()
         self.y = self.__preprocessing.get_y()
 
+        self.X_CNN = self.__preprocessing.get_X_CNN()
+        self.y_CNN = self.__preprocessing.get_y_CNN()
+
     def train_test_method_grid_search(self, cv):
         X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=TRAIN_70_30_PORTION, random_state=42) 
         X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=VAL_TEST_70_30_PORTION, random_state=42) 
@@ -540,6 +544,11 @@ class Training:
         X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=TRAIN_70_30_PORTION, random_state=42) 
         X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=VAL_TEST_70_30_PORTION, random_state=42) 
 
+
+        X_train_CNN, X_temp_CNN, y_train_CNN, y_temp_CNN = train_test_split(self.X_CNN, self.y_CNN, test_size=TRAIN_70_30_PORTION, random_state=42) 
+        X_val_CNN, X_test_CNN, y_val_CNN, y_test_CNN = train_test_split(X_temp_CNN, y_temp_CNN, test_size=VAL_TEST_70_30_PORTION, random_state=42) 
+
+
         model = {}
         for name in self.__model_name:
             if name == "LogisticRegression":
@@ -554,9 +563,9 @@ class Training:
 
         for name, mdl in model.items():
             if name == "CNN":
-                X_train_CNN = X_train.reshape((X_train.shape[0], *X_train.shape[1:]))
-                X_val_CNN = X_val.reshape((X_val.shape[0], *X_val.shape[1:]))
-                X_test_CNN = X_test.reshape((X_test.shape[0], *X_test.shape[1:]))
+                X_train_CNN = X_train_CNN.reshape((X_train_CNN.shape[0], *X_train_CNN.shape[1:]))
+                X_val_CNN = X_val_CNN.reshape((X_val_CNN.shape[0], *X_val_CNN.shape[1:]))
+                X_test_CNN = X_test_CNN.reshape((X_test_CNN.shape[0], *X_test_CNN.shape[1:]))
 
                 X_train_CNN = torch.from_numpy(X_train_CNN).to(device)
                 X_val_CNN = torch.from_numpy(X_val_CNN).to(device)

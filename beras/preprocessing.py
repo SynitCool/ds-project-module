@@ -18,7 +18,7 @@ class Preprocessing:
                  feature_selected: bool = False,
                  n_components: int = 10,
                  alias: str = '',
-                 process: bool = True):
+                 include_cnn: bool = False):
         
         # private
         self.__dataset = dataset
@@ -28,28 +28,29 @@ class Preprocessing:
         self.__alias = alias
         self.__X = []
         self.__y = []
+        self.__X_CNN = []
+        self.__y_CNN = []
 
         # public
         self.images_path = self.__dataset.get_images_path()
 
-        if process:
-            self.__process_images()
-        else:
+        self.__process_images()
+        if include_cnn:
             for i in range(len(self.images_path)):
-                self.__y.append(self.images_path[i].split("/")[-2])
+                self.__y_CNN.append(self.images_path[i].split("/")[-2])
 
                 img = self.images_path[i]
                 img = cv2.imread(img)
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 img = cv2.resize(img, (256, 256))
 
-                self.__X.append(img)
-                
-            self.__X = np.array(self.__X)
-            self.__y = np.array(self.__y)
+                self.__X_CNN.append(img)
+
+            self.__X_CNN = np.array(self.__X_CNN)
+            self.__y_CNN = np.array(self.__y_CNN)
 
             le = LabelEncoder()
-            self.__y = le.fit_transform(self.__y)
+            self.__y_CNN = le.fit_transform(self.__y_CNN)
 
     def __process_images(self):
         for i in range(len(self.images_path)):
@@ -122,3 +123,9 @@ class Preprocessing:
     
     def get_y(self):
         return self.__y
+
+    def get_X_CNN(self):
+        return self.__X_CNN
+    
+    def get_y_CNN(self):
+        return self.__y_CNN
