@@ -482,7 +482,7 @@ class Training:
                 confusion_matrix_test.to_excel(f"{name}_{self.__alias}_test_split_{fold+1}_confusion_matrix.xlsx", index=False)
 
     def __calc_roc_auc(self, y_true, y_pred_prob):
-      n_classes = len(np.unique(y_true))
+      n_classes = NUM_CLASS
 
       y_true_bin = label_binarize(y_true, classes=[i for i in range(n_classes)])
 
