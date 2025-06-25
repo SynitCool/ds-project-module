@@ -1,3 +1,4 @@
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -604,12 +605,14 @@ class Training:
 
             # TRAIN
             if name == "CNN":
-                sample_inputs, _ = next(iter(train_loader))
-                y_pred_train, y_pred_train_output = mdl.predict(sample_inputs, device=device)
+                y_pred_train, y_pred_train_output = mdl.predict(X_train_CNN, device=device)
                 y_pred_train = y_pred_train.cpu().numpy()
                 y_pred_train_output = y_pred_train_output.cpu().numpy()
             else:
                 y_pred_train = mdl.predict(X_train)
+
+            print(len(y_train), len(y_pred_train))
+            print(y_train, y_pred_train)
             
             train_metrics = {
                 "Accuracy": [accuracy_score(y_train, y_pred_train)]
@@ -629,9 +632,7 @@ class Training:
 
             # VAL
             if name == "CNN":
-                val_loader = DataLoader(TensorDataset(X_val_CNN, y_val_CNN), batch_size=BATCH_SIZE, shuffle=False)
-                sample_val, _ = next(iter(val_loader))
-                y_pred_val, y_pred_val_output = mdl.predict(sample_val, device=device)
+                y_pred_val, y_pred_val_output = mdl.predict(X_val_CNN, device=device)
                 y_pred_val = y_pred_val.cpu().numpy()
                 y_pred_val_output = y_pred_val_output.cpu().numpy()
             else:
@@ -654,9 +655,7 @@ class Training:
             # TEST
             # VAL
             if name == "CNN":
-                test_loader = DataLoader(TensorDataset(X_test_CNN, y_test_CNN), batch_size=BATCH_SIZE, shuffle=False)
-                sample_test, _ = next(iter(test_loader))
-                y_pred_test, y_pred_test_output = mdl.predict(sample_test, device=device)
+                y_pred_test, y_pred_test_output = mdl.predict(X_test_CNN, device=device)
                 y_pred_test = y_pred_test.cpu().numpy()
                 y_pred_test_output = y_pred_test_output.cpu().numpy()
             else:
