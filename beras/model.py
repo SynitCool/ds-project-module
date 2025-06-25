@@ -65,3 +65,41 @@ class SimpleCNN(nn.Module):
             outputs = self(x)
             _, preds = torch.max(outputs, 1)
         return preds, outputs
+
+# Example usage for SimpleCNN class
+# filepath: /workspaces/ds-project-module/beras/example_usage.py
+
+# 1. Define input size and number of classes
+input_size = (3, 32, 32)  # Example: 3 channels, 32x32 image
+num_classes = 10
+
+# 2. Create random dataset for demonstration
+X = torch.randn(100, *input_size)  # 100 samples
+y = torch.randint(0, num_classes, (100,))  # 100 labels
+
+# 3. Create DataLoader
+dataset = TensorDataset(X, y)
+train_loader = DataLoader(dataset, batch_size=16, shuffle=True)
+
+# 4. Instantiate the model
+model = SimpleCNN(input_size=input_size, num_classes=num_classes)
+
+# 5. Define loss function and optimizer
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+# 6. Train the model using the train_model method
+model.train_model(
+    train_loader=train_loader,
+    criterion=criterion,
+    optimizer=optimizer,
+    epochs=5,
+    device=device  # or 'cuda' if cuda is available
+)
+
+# 7. Predict using the predict method
+# Take a batch from the dataset
+sample_inputs, _ = next(iter(train_loader))
+predictions = model.predict(sample_inputs, device=device)
+print("Predicted class indices:", predictions)
+

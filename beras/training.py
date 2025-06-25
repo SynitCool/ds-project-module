@@ -567,13 +567,13 @@ class Training:
                 X_val_CNN = X_val_CNN.reshape((X_val_CNN.shape[0], *X_val_CNN.shape[1:]))
                 X_test_CNN = X_test_CNN.reshape((X_test_CNN.shape[0], *X_test_CNN.shape[1:]))
 
-                X_train_CNN = torch.from_numpy(X_train_CNN).to(device)
-                X_val_CNN = torch.from_numpy(X_val_CNN).to(device)
-                X_test_CNN = torch.from_numpy(X_test_CNN).to(device)
+                X_train_CNN = torch.from_numpy(X_train_CNN)
+                X_val_CNN = torch.from_numpy(X_val_CNN)
+                X_test_CNN = torch.from_numpy(X_test_CNN)
 
-                y_train_CNN = torch.from_numpy(y_train).to(device)
-                y_val_CNN = torch.from_numpy(y_val).to(device)
-                y_test_CNN = torch.from_numpy(y_test).to(device)
+                y_train_CNN = torch.from_numpy(y_train)
+                y_val_CNN = torch.from_numpy(y_val)
+                y_test_CNN = torch.from_numpy(y_test)
             
             # Fit Model
             if name == "CNN":
