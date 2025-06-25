@@ -1,4 +1,3 @@
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -611,9 +610,6 @@ class Training:
             else:
                 y_pred_train = mdl.predict(X_train)
 
-            print(len(y_train), len(y_pred_train))
-            print(y_train, y_pred_train)
-            
             train_metrics = {
                 "Accuracy": [accuracy_score(y_train, y_pred_train)]
             }
