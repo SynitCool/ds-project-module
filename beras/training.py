@@ -21,12 +21,7 @@ from preprocessing import Preprocessing
 
 from utils import save_roc_multiclass
 
-from config import LABEL_CONVERTER
-from config import TRAIN_70_30_PORTION
-from config import VAL_TEST_70_30_PORTION
-from config import BATCH_SIZE
-from config import EPOCHS
-from config import LR
+from config import *
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -563,13 +558,13 @@ class Training:
 
         for name, mdl in model.items():
             if name == "CNN":
-                X_train_CNN = X_train_CNN.reshape((X_train_CNN.shape[0], *X_train_CNN.shape[1:]))
-                X_val_CNN = X_val_CNN.reshape((X_val_CNN.shape[0], *X_val_CNN.shape[1:]))
-                X_test_CNN = X_test_CNN.reshape((X_test_CNN.shape[0], *X_test_CNN.shape[1:]))
+                X_train_CNN = X_train_CNN.reshape((X_train_CNN.shape[0], *X_train_CNN.shape[1:][::-1]))
+                X_val_CNN = X_val_CNN.reshape((X_val_CNN.shape[0], *X_val_CNN.shape[1:][::-1]))
+                X_test_CNN = X_test_CNN.reshape((X_test_CNN.shape[0], *X_test_CNN.shape[1:][::-1]))
 
-                X_train_CNN = torch.from_numpy(X_train_CNN)
-                X_val_CNN = torch.from_numpy(X_val_CNN)
-                X_test_CNN = torch.from_numpy(X_test_CNN)
+                X_train_CNN = torch.from_numpy(X_train_CNN).to(torch.float32)
+                X_val_CNN = torch.from_numpy(X_val_CNN).to(torch.float32)
+                X_test_CNN = torch.from_numpy(X_test_CNN).to(torch.float32)
 
                 y_train_CNN = torch.from_numpy(y_train)
                 y_val_CNN = torch.from_numpy(y_val)
@@ -602,12 +597,10 @@ class Training:
             elif name == "RF":
                 imp = mdl.feature_importances_
                 imp = imp.reshape((1, imp.shape[0]))
-            elif name == "CNN":
-                imp = [param.data.cpu().numpy() for param in mdl.parameters()]
-                imp = np.concatenate(imp, axis=0).reshape((1, -1))
 
-            imp = pd.DataFrame(imp)
-            imp.to_excel(f"{name}_{self.__alias}_coef_feature_importance.xlsx", index=False)
+            if name != "CNN":
+              imp = pd.DataFrame(imp)
+              imp.to_excel(f"{name}_{self.__alias}_coef_feature_importance.xlsx", index=False)
 
             # TRAIN
             if name == "CNN":
