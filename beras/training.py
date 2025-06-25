@@ -606,6 +606,8 @@ class Training:
             if name == "CNN":
                 sample_inputs, _ = next(iter(train_loader))
                 y_pred_train, y_pred_train_output = mdl.predict(sample_inputs, device=device)
+                y_pred_train = y_pred_train.cpu().numpy()
+                y_pred_train_output = y_pred_train_output.cpu().numpy()
             else:
                 y_pred_train = mdl.predict(X_train)
             
@@ -630,6 +632,8 @@ class Training:
                 val_loader = DataLoader(TensorDataset(X_val_CNN, y_val_CNN), batch_size=BATCH_SIZE, shuffle=False)
                 sample_val, _ = next(iter(val_loader))
                 y_pred_val, y_pred_val_output = mdl.predict(sample_val, device=device)
+                y_pred_val = y_pred_val.cpu().numpy()
+                y_pred_val_output = y_pred_val_output.cpu().numpy()
             else:
                 y_pred_val = mdl.predict(X_val)
 
@@ -653,6 +657,8 @@ class Training:
                 test_loader = DataLoader(TensorDataset(X_test_CNN, y_test_CNN), batch_size=BATCH_SIZE, shuffle=False)
                 sample_test, _ = next(iter(test_loader))
                 y_pred_test, y_pred_test_output = mdl.predict(sample_test, device=device)
+                y_pred_test = y_pred_test.cpu().numpy()
+                y_pred_test_output = y_pred_test_output.cpu().numpy()
             else:
                 y_pred_test = mdl.predict(X_test)
                 
