@@ -29,7 +29,7 @@ from config import *
 
 
 def save_roc_multiclass(y_true, y_pred_prob, name: str):
-    n_classes = len(np.unique(y_true))
+    n_classes = NUM_CLASS
 
     y_true_bin = label_binarize(y_true, classes=[i for i in range(n_classes)])
 
