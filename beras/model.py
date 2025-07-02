@@ -64,4 +64,5 @@ class SimpleCNN(nn.Module):
         with torch.no_grad():
             outputs = self(x)
             _, preds = torch.max(outputs, 1)
-        return preds, outputs
+            probabilities = torch.softmax(outputs, dim=1)
+        return preds, probabilities
