@@ -632,7 +632,7 @@ class Training:
 
             if name != "CNN":
               imp = pd.DataFrame(imp)
-              imp.to_excel(f"{name}_{self.__alias}_coef_feature_importance.xlsx", index=False)
+              imp.to_excel(f"{name}_{self.__alias}_{portion}_coef_feature_importance.xlsx", index=False)
 
             # TRAIN
             if name == "CNN":
@@ -704,24 +704,24 @@ class Training:
             confusion_matrix_test = pd.DataFrame(confusion_matrix_test)
 
             # save to excel
-            train_metrics.to_excel(f"{name}_{self.__alias}_train_metric.xlsx", index=False)
-            confusion_matrix_train.to_excel(f"{name}_{self.__alias}_confusion_matrix_train.xlsx", index=False)
+            train_metrics.to_excel(f"{name}_{self.__alias}_{portion}_train_metric.xlsx", index=False)
+            confusion_matrix_train.to_excel(f"{name}_{self.__alias}_confusion_matrix_{portion}_train.xlsx", index=False)
 
-            val_metrics.to_excel(f"{name}_{self.__alias}_val_metric.xlsx", index=False)
-            confusion_matrix_val.to_excel(f"{name}_{self.__alias}_confusion_matrix_val.xlsx", index=False)
+            val_metrics.to_excel(f"{name}_{self.__alias}_{portion}_val_metric.xlsx", index=False)
+            confusion_matrix_val.to_excel(f"{name}_{self.__alias}_confusion_matrix_{portion}_val.xlsx", index=False)
             
-            test_metrics.to_excel(f"{name}_{self.__alias}_test_metric.xlsx", index=False)
-            confusion_matrix_test.to_excel(f"{name}_{self.__alias}_confusion_matrix_test.xlsx", index=False)
+            test_metrics.to_excel(f"{name}_{self.__alias}_{portion}_test_metric.xlsx", index=False)
+            confusion_matrix_test.to_excel(f"{name}_{self.__alias}_confusion_matrix_{portion}_test.xlsx", index=False)
 
             # save roc
             if name == "CNN":
-                save_roc_multiclass(y_train, y_pred_train_output, f"{name}_{self.__alias}_train")
-                save_roc_multiclass(y_val, y_pred_val_output, f"{name}_{self.__alias}_val")
-                save_roc_multiclass(y_test, y_pred_test_output, f"{name}_{self.__alias}_test")
+                save_roc_multiclass(y_train, y_pred_train_output, f"{name}_{self.__alias}_{portion}_train")
+                save_roc_multiclass(y_val, y_pred_val_output, f"{name}_{self.__alias}_{portion}_val")
+                save_roc_multiclass(y_test, y_pred_test_output, f"{name}_{self.__alias}_{portion}_test")
             else:
-                save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{self.__alias}_train")
-                save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{self.__alias}_val")
-                save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{self.__alias}_test")
+                save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{self.__alias}_{portion}_train")
+                save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{self.__alias}_{portion}_val")
+                save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{self.__alias}_{portion}_test")
 
             # plot roc auc
             if name == "CNN":
@@ -737,5 +737,5 @@ class Training:
                 train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train}, 
                 val={"fpr": fpr_val, "tpr": tpr_val, "roc_auc": roc_auc_val},
                 test={"fpr": fpr_test, "tpr": tpr_test, "roc_auc": roc_auc_test},
-                name=name
+                name=name+portion
             )
