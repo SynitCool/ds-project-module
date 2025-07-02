@@ -318,9 +318,20 @@ class Training:
         self.X_CNN = self.__preprocessing.get_X_CNN()
         self.y_CNN = self.__preprocessing.get_y_CNN()
 
+    def __minimum_dataset(self, label_data):
+      if (len(np.unique(label_data)) < NUM_CLASS):
+        raise Exception("You have insufficient data to training the data! Please add more data!")
+        
+
     def train_test_method_grid_search(self, cv):
+        raise Exception("Train test using grid search is not supported yet!")
         X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=TRAIN_70_30_PORTION, random_state=42) 
-        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=VAL_TEST_70_30_PORTION, random_state=42) 
+        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=VAL_TEST_70_30_PORTION, random_state=42)
+
+        self.__minimum_dataset(y_train)
+        self.__minimum_dataset(y_val)
+        self.__minimum_dataset(y_test)
+
 
         model = {}
 
@@ -408,6 +419,7 @@ class Training:
             )
 
     def validate_kfold(self, n_splits: int):
+        raise Exception("Train test using KFold is not supported yet!")
         model = {}
         for name in self.__model_name:
             if name == "LogisticRegression":
@@ -537,13 +549,31 @@ class Training:
       plt.legend(loc="lower right")
       plt.show()
 
-    def train_test_method(self):
-        X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=TRAIN_70_30_PORTION, random_state=42) 
-        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=VAL_TEST_70_30_PORTION, random_state=42) 
+    def train_test_method(self, portion="70_20_10"):
+        portion_ratio_1 = 0
+        portion_ratio_2 = 0
+        if portion == "70_20_10":
+          portion_ratio_1 = 0.33
+          portion_ratio_2 = 0.33
+        elif portion == "60_20_20":
+          portion_ratio_1 = 0.4
+          portion_ratio_2 = 0.5
+        else:
+          raise Exception(f"Invalid portion ratio for {portion}")
+
+        X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=portion_ratio_1, random_state=42) 
+        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=portion_ratio_2, random_state=42) 
 
 
-        X_train_CNN, X_temp_CNN, y_train_CNN, y_temp_CNN = train_test_split(self.X_CNN, self.y_CNN, test_size=TRAIN_70_30_PORTION, random_state=42) 
-        X_val_CNN, X_test_CNN, y_val_CNN, y_test_CNN = train_test_split(X_temp_CNN, y_temp_CNN, test_size=VAL_TEST_70_30_PORTION, random_state=42) 
+        X_train_CNN, X_temp_CNN, y_train_CNN, y_temp_CNN = train_test_split(self.X_CNN, self.y_CNN, test_size=portion_ratio_1, random_state=42) 
+        X_val_CNN, X_test_CNN, y_val_CNN, y_test_CNN = train_test_split(X_temp_CNN, y_temp_CNN, test_size=portion_ratio_2, random_state=42)
+
+        self.__minimum_dataset(y_train)
+        self.__minimum_dataset(y_val)
+        self.__minimum_dataset(y_test)
+        self.__minimum_dataset(y_train_CNN)
+        self.__minimum_dataset(y_val_CNN)
+        self.__minimum_dataset(y_test_CNN)  
 
 
         model = {}
