@@ -41,6 +41,8 @@ class TrainingNoSplit:
         self.__test_preprocessing = test_preprocessing
         self.__model_name = model_name
 
+        raise Exception("Training No Split is not supported yet!")
+
     def __calc_roc_auc(self, y_true, y_pred_prob):
       n_classes = len(np.unique(y_true))
 
