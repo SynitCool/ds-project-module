@@ -68,7 +68,6 @@ class Dataset:
                         segment_img = cv2.cvtColor(segment_img, cv2.COLOR_BGR2RGB)
                     elif segment == "mask_rcnn":
                         segment_img = segment_func[segment](image)
-                        segment_img = cv2.cvtColor(segment_img, cv2.COLOR_BGR2RGB)
                     elif segment == "unet":
                         segment_img = segment_func[segment](image)
                         segment_img = (segment_img * 255).astype('uint8')
