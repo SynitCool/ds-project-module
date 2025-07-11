@@ -191,20 +191,26 @@ def mask_rcnn_segmentation(img: str):
 
     img = Image.open(img)
     transform = transforms.Compose([transforms.ToTensor()])
-    img = transform(img)
-    pred = model([img])
+    img_tensor = transform(img)
+    pred = model([img_tensor])
     pred_score = list(pred[0]['scores'].detach().numpy())
     pred_t = [pred_score.index(x) for x in pred_score if x>0.5][-1]
     masks = (pred[0]['masks']>0.5).squeeze().detach().cpu().numpy()
     masks = masks[:pred_t+1]
 
     # Apply masks directly to the original image
-    masked_img = np.zeros_like(img)
+    masked_img_tensor = torch.zeros_like(img_tensor)
     for i in range(len(masks)):
         mask = masks[i]
-        masked_img[mask > 0] = img[mask > 0]
-    
-    return masked_img
+        # Expand mask to match the channel dimension of the image
+        expanded_mask = np.expand_dims(mask, axis=0)
+        expanded_mask = np.repeat(expanded_mask, img_tensor.shape[0], axis=0)
+        masked_img_tensor[expanded_mask > 0] = img_tensor[expanded_mask > 0]
+
+    # Convert the masked image tensor to a NumPy array
+    masked_img_np = masked_img_tensor.mul(255).permute(1, 2, 0).byte().numpy()
+
+    return masked_img_np
 
 
 def canny_image(gray_image):
