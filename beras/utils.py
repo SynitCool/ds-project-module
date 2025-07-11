@@ -194,18 +194,37 @@ def mask_rcnn_segmentation(img: str):
     img_tensor = transform(img)
     pred = model([img_tensor])
     pred_score = list(pred[0]['scores'].detach().numpy())
-    pred_t = [pred_score.index(x) for x in pred_score if x>0.5][-1]
+    pred_t = [pred_score.index(x) for x in pred_score if x>0.5]
+
+    # Check if any objects were detected
+    if len(pred_t) == 0:
+      # Return an empty mask if no objects are detected
+      return torch.zeros_like(img_tensor).mul(255).permute(1, 2, 0).byte().numpy()
+
+    pred_t = pred_t[-1]
     masks = (pred[0]['masks']>0.5).squeeze().detach().cpu().numpy()
     masks = masks[:pred_t+1]
+
+    # Add a check here to see if masks is empty or 1D
+    if len(masks) == 0 or masks.ndim == 1:
+      raise Exception("No objects were detected in the image.") 
 
     # Apply masks directly to the original image
     masked_img_tensor = torch.zeros_like(img_tensor)
     for i in range(len(masks)):
         mask = masks[i]
-        # Expand mask to match the channel dimension of the image
-        expanded_mask = np.expand_dims(mask, axis=0)
-        expanded_mask = np.repeat(expanded_mask, img_tensor.shape[0], axis=0)
-        masked_img_tensor[expanded_mask > 0] = img_tensor[expanded_mask > 0]
+        # Check if the mask is 2D before expanding
+        if mask.ndim == 2:
+            # Expand mask to match the channel dimension of the image and keep height/width
+            expanded_mask = np.repeat(mask[np.newaxis, :, :], img_tensor.shape[0], axis=0)
+
+
+            # Apply the mask by selecting elements where the mask is True
+            masked_img_tensor[:, expanded_mask[0] > 0] = img_tensor[:, expanded_mask[0] > 0]
+        else:
+            # Handle unexpected mask dimensions if necessary, e.g., skip this mask
+            print(f"Warning: Skipping mask with unexpected dimension: {mask.ndim}")
+
 
     # Convert the masked image tensor to a NumPy array
     masked_img_np = masked_img_tensor.mul(255).permute(1, 2, 0).byte().numpy()
