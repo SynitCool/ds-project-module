@@ -80,52 +80,55 @@ class Dataset:
             cv2.imwrite(os.path.join(dest_folder_path, label, ori_filename), ori_img)
     
     def plot_segmentation(self):
-      random_image = np.random.choice(self.__images)
+        random_image = np.random.choice(self.__images)
+        
+        img = cv2.imread(random_image)
+        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        canny_result = canny_image(gray_img)
+        try:
+            # unet_result = unet_segmentation(random_image)
+            unet_result = None
+            rcnn_result = rcnn_segmentation(random_image)
+        except Exception as e:
+            print(f"Error during segmentation: {e}, [Please try again!]")
+            unet_result = None
+            rcnn_result = None
+        
+        try:
+            mask_rcnn_result = mask_rcnn_segmentation(random_image)
+        except Exception as e:
+            print(f"Error during segmentation: {e}, [Please try again!]")
+            mask_rcnn_result = None
 
-      img = cv2.imread(random_image)
-      gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-      canny_result = canny_image(gray_img)
+        plt.figure(figsize=(15, 10))
 
-      try:
-          # unet_result = unet_segmentation(random_image)
-          unet_result = None
-          rcnn_result = rcnn_segmentation(random_image)
-          mask_rcnn_result = mask_rcnn_segmentation(random_image)
-      except Exception as e:
-          print(f"Error during segmentation: {e}, [Please try again!]")
-          unet_result = None
-          rcnn_result = None
-          mask_rcnn_result = None
+        plt.subplot(2, 3, 1)
+        plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+        plt.title('Original Image')
 
-      plt.figure(figsize=(15, 10))
+        plt.subplot(2, 3, 2)
+        plt.imshow(canny_result, cmap='gray')
+        plt.title('Canny Edge Detection')
 
-      plt.subplot(2, 3, 1)
-      plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-      plt.title('Original Image')
+        if mask_rcnn_result is not None:
+            plt.subplot(2, 3, 3)
+            plt.imshow(mask_rcnn_result)
+            plt.title('Mask R-CNN Segmentation')
 
-      plt.subplot(2, 3, 2)
-      plt.imshow(canny_result, cmap='gray')
-      plt.title('Canny Edge Detection')
+        if unet_result is not None:
+            plt.subplot(2, 3, 4)
+            plt.imshow(unet_result, cmap='gray')
+            plt.title('U-Net Segmentation')
 
-      if mask_rcnn_result is not None:
-          plt.subplot(2, 3, 3)
-          plt.imshow(mask_rcnn_result)
-          plt.title('Mask R-CNN Segmentation')
+        if rcnn_result is not None:
+            plt.subplot(2, 3, 5)
+            plt.imshow(rcnn_result)
+            plt.title('Faster R-CNN Segmentation')
 
-      if unet_result is not None:
-          plt.subplot(2, 3, 4)
-          plt.imshow(unet_result, cmap='gray')
-          plt.title('U-Net Segmentation')
-
-      if rcnn_result is not None:
-          plt.subplot(2, 3, 5)
-          plt.imshow(rcnn_result)
-          plt.title('Faster R-CNN Segmentation')
-
-      plt.tight_layout()
-      plt.savefig(f"plot_{self.__alias}_segmentation.png")
-      plt.show()
+        plt.tight_layout()
+        plt.savefig(f"plot_{self.__alias}_segmentation.png")
+        plt.show()
 
     def plot_augmentation(self, augmentation: dict):
       random_image = np.random.choice(self.__images)
