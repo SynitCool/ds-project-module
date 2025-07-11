@@ -92,10 +92,12 @@ class Dataset:
           # unet_result = unet_segmentation(random_image)
           unet_result = None
           rcnn_result = rcnn_segmentation(random_image)
+          mask_rcnn_result = mask_rcnn_segmentation(random_image)
       except Exception as e:
           print(f"Error during segmentation: {e}, [Please try again!]")
           unet_result = None
           rcnn_result = None
+          mask_rcnn_result = None
 
       plt.figure(figsize=(15, 10))
 
@@ -106,6 +108,11 @@ class Dataset:
       plt.subplot(2, 3, 2)
       plt.imshow(canny_result, cmap='gray')
       plt.title('Canny Edge Detection')
+
+      if mask_rcnn_result is not None:
+          plt.subplot(2, 3, 3)
+          plt.imshow(mask_rcnn_result)
+          plt.title('Mask R-CNN Segmentation')
 
       if unet_result is not None:
           plt.subplot(2, 3, 4)
