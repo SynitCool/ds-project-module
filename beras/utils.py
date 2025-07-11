@@ -185,5 +185,27 @@ def rcnn_segmentation(img: str):
 
   return im1
 
+def mask_rcnn_segmentation(img: str):
+    model = torchvision.models.detection.maskrcnn_resnet50_fpn(pretrained=True)
+    model.eval()
+
+    img = Image.open(img)
+    transform = transforms.Compose([transforms.ToTensor()])
+    img = transform(img)
+    pred = model([img])
+    pred_score = list(pred[0]['scores'].detach().numpy())
+    pred_t = [pred_score.index(x) for x in pred_score if x>0.5][-1]
+    masks = (pred[0]['masks']>0.5).squeeze().detach().cpu().numpy()
+    masks = masks[:pred_t+1]
+
+    # Apply masks directly to the original image
+    masked_img = np.zeros_like(img)
+    for i in range(len(masks)):
+        mask = masks[i]
+        masked_img[mask > 0] = img[mask > 0]
+    
+    return masked_img
+
+
 def canny_image(gray_image):
   return cv2.Canny(gray_image, 50, 150)
