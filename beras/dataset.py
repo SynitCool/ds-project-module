@@ -10,7 +10,7 @@ import torchvision.transforms.functional as TF # Import the functional module
 
 from PIL import Image
 
-from utils import canny_image, rcnn_segmentation, unet_segmentation
+from utils import canny_image, rcnn_segmentation, unet_segmentation, mask_rcnn_segmentation
 
 
 import warnings
@@ -40,7 +40,7 @@ class Dataset:
         return self.__images
     
     def save_segmentation(self, dest_folder_path: str, segmentation: list[str]):
-        segment_func = {"canny": canny_image, "rcnn": rcnn_segmentation, "unet": unet_segmentation}
+        segment_func = {"canny": canny_image, "rcnn": rcnn_segmentation, "unet": unet_segmentation, "mask_rcnn": mask_rcnn_segmentation}
 
         if not os.path.exists(dest_folder_path):
             os.mkdir(dest_folder_path)
@@ -64,6 +64,9 @@ class Dataset:
                     if segment == "canny":
                         segment_img = segment_func[segment](gray_image)
                     elif segment == "rcnn":
+                        segment_img = segment_func[segment](image)
+                        segment_img = cv2.cvtColor(segment_img, cv2.COLOR_BGR2RGB)
+                    elif segment == "mask_rcnn":
                         segment_img = segment_func[segment](image)
                         segment_img = cv2.cvtColor(segment_img, cv2.COLOR_BGR2RGB)
                     elif segment == "unet":
