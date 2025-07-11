@@ -199,7 +199,7 @@ def mask_rcnn_segmentation(img: str):
     # Check if any objects were detected
     if len(pred_t) == 0:
       # Return an empty mask if no objects are detected
-      return torch.zeros_like(img_tensor).mul(255).permute(1, 2, 0).byte().numpy()
+      raise Exception("No objects were detected in the image.") 
 
     pred_t = pred_t[-1]
     masks = (pred[0]['masks']>0.5).squeeze().detach().cpu().numpy()
