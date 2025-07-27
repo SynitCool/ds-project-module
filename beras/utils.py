@@ -64,7 +64,7 @@ def save_roc_multiclass(y_true, y_pred_prob, name: str):
     return fpr, tpr, roc_auc
 
 def features_extraction(gray_image, gaussian_blur, extractions: list[str]):
-  extract_func = {"fourier": fourier_extraction, "glcm": glcm_extraction}
+  extract_func = {"fourier": fourier_extraction, "glcm": glcm_extraction, "lbp": lbp_extraction}
   all_extract = []
 
   for ext in extractions:
@@ -232,20 +232,6 @@ def mask_rcnn_segmentation(img: str):
     masked_img_np = masked_img_tensor.mul(255).permute(1, 2, 0).byte().numpy()
 
     return masked_img_np
-
-def features_extraction(gray_image, gaussian_blur, extractions: list[str]):
-  extract_func = {"fourier": fourier_extraction, "glcm": glcm_extraction}
-  all_extract = []
-
-  for ext in extractions:
-    if "fourier" == ext:
-      all_extract.append(extract_func[ext](gray_image))
-    elif "glcm" == ext:
-      all_extract.append(extract_func[ext](gaussian_blur))
-    elif "lbp" == ext:
-        all_extract.append(extract_func[ext](gray_image))
-
-  return np.concatenate(tuple(all_extract), axis=1)
 
 def lbp_extraction(gray_image):
     # Define LBP parameters

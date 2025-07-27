@@ -336,10 +336,13 @@ class Training:
     def train_test_method_cross_val(self):
         for name, spec in self.__model_name.items():
             model = spec["model"]
-
-            y_pred = cross_val_predict(spec["model"], self.X , self.y)
-            y_proba = cross_val_predict(spec["model"], self.X , self.y, method='predict_proba')
-
+            
+            try:
+                y_pred = cross_val_predict(spec["model"], self.X , self.y)
+                y_proba = cross_val_predict(spec["model"], self.X , self.y, method='predict_proba')
+            except:
+                raise Exception("You have insufficient data! Please add more data!")
+                
             train_metrics = {
                 "Accuracy": [accuracy_score(self.y, y_pred)]
             }
