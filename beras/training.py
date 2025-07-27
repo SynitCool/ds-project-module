@@ -722,34 +722,35 @@ class Training:
               imp.to_excel(f"{name}_{self.__alias}_{portion}_coef_feature_importance.xlsx", index=False)
 
             # LIME and SHAP for non-CNN models
-            if name != "CNN":
-                # LIME
-                print(f"--- LIME Analysis for {name} ---")
-                try:
-                    explainer = lime.lime_tabular.LimeTabularExplainer(
-                        X_train,
-                        mode='classification',
-                        class_names=[LABEL_CONVERTER[str(i)] for i in range(NUM_CLASS)],
-                        feature_names=[f'feature_{i}' for i in range(X_train.shape[1])]
-                    )
-                    exp = explainer.explain_instance(X_test[0], mdl.predict_proba, num_features=5)
-                    exp.show_in_notebook(show_table=True)
-                except:
-                    print("Error has occured to create lime analysis, so we're skipping that. It could be that you need more data!")
-
-                # SHAP
-                print(f"\n--- SHAP Analysis for {name} ---")
-                try:
-                    # Summarize the background data for KernelExplainer
-                    X_train_summary = shap.kmeans(X_train, 50)
-                    explainer = shap.KernelExplainer(mdl.predict_proba, X_train_summary)
-                    shap_values = explainer.shap_values(X_test)
-
-                    # Summary plot - now this should work correctly
-                    print(f"SHAP Summary Plot for {name}")
-                    shap.summary_plot(shap_values, X_test, feature_names=[f'feature_{i}' for i in range(X_train.shape[1])], class_names=[LABEL_CONVERTER[str(i)] for i in range(NUM_CLASS)])
-                except:
-                    print("Error has occured to create shap analysis, so we're skipping that. It could be that you need more data!")
+            if show_lime_shap:
+                if name != "CNN":
+                    # LIME
+                    print(f"--- LIME Analysis for {name} ---")
+                    try:
+                        explainer = lime.lime_tabular.LimeTabularExplainer(
+                            X_train,
+                            mode='classification',
+                            class_names=[LABEL_CONVERTER[str(i)] for i in range(NUM_CLASS)],
+                            feature_names=[f'feature_{i}' for i in range(X_train.shape[1])]
+                        )
+                        exp = explainer.explain_instance(X_test[0], mdl.predict_proba, num_features=5)
+                        exp.show_in_notebook(show_table=True)
+                    except:
+                        print("Error has occured to create lime analysis, so we're skipping that. It could be that you need more data!")
+    
+                    # SHAP
+                    print(f"\n--- SHAP Analysis for {name} ---")
+                    try:
+                        # Summarize the background data for KernelExplainer
+                        X_train_summary = shap.kmeans(X_train, 50)
+                        explainer = shap.KernelExplainer(mdl.predict_proba, X_train_summary)
+                        shap_values = explainer.shap_values(X_test)
+    
+                        # Summary plot - now this should work correctly
+                        print(f"SHAP Summary Plot for {name}")
+                        shap.summary_plot(shap_values, X_test, feature_names=[f'feature_{i}' for i in range(X_train.shape[1])], class_names=[LABEL_CONVERTER[str(i)] for i in range(NUM_CLASS)])
+                    except:
+                        print("Error has occured to create shap analysis, so we're skipping that. It could be that you need more data!")
 
 
             # TRAIN
