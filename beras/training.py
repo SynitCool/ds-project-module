@@ -587,7 +587,7 @@ class Training:
       fpr["micro"], tpr["micro"], _ = roc_curve(y_true_bin.ravel(), y_pred_prob.ravel())
       roc_auc["micro"] = roc_auc_score(y_true_bin, y_pred_prob, average="micro")
 
-      return fpr, tpr, roc_aucimport cv2
+      return fpr, tpr, roc_auc
 
     def __plot_roc_auc(self, train, val, test, name: str):
       fpr_train = train["fpr"]
