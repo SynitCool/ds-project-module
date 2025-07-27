@@ -587,7 +587,7 @@ class Training:
       fpr["micro"], tpr["micro"], _ = roc_curve(y_true_bin.ravel(), y_pred_prob.ravel())
       roc_auc["micro"] = roc_auc_score(y_true_bin, y_pred_prob, average="micro")
 
-      return fpr, tpr, roc_auc
+      return fpr, tpr, roc_aucimport cv2
 
     def __plot_roc_auc(self, train, val, test, name: str):
       fpr_train = train["fpr"]
@@ -624,7 +624,7 @@ class Training:
       plt.legend(loc="lower right")
       plt.show()
 
-    def train_test_method(self, portion="70_20_10", show_lime_shape: bool = False):
+    def train_test_method(self, portion="70_20_10", show_lime_shap: bool = False):
         portion_ratio_1 = 0
         portion_ratio_2 = 0
         if portion == "70_20_10":
