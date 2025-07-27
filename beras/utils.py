@@ -66,12 +66,14 @@ def save_roc_multiclass(y_true, y_pred_prob, name: str):
 def features_extraction(gray_image, gaussian_blur, extractions: list[str]):
   extract_func = {"fourier": fourier_extraction, "glcm": glcm_extraction}
   all_extract = []
-  
+
   for ext in extractions:
     if "fourier" == ext:
       all_extract.append(extract_func[ext](gray_image))
     elif "glcm" == ext:
       all_extract.append(extract_func[ext](gaussian_blur))
+    elif "lbp" == ext:
+        all_extract.append(extract_func[ext](gray_image))
 
   return np.concatenate(tuple(all_extract), axis=1)
 
@@ -230,6 +232,34 @@ def mask_rcnn_segmentation(img: str):
     masked_img_np = masked_img_tensor.mul(255).permute(1, 2, 0).byte().numpy()
 
     return masked_img_np
+
+def features_extraction(gray_image, gaussian_blur, extractions: list[str]):
+  extract_func = {"fourier": fourier_extraction, "glcm": glcm_extraction}
+  all_extract = []
+
+  for ext in extractions:
+    if "fourier" == ext:
+      all_extract.append(extract_func[ext](gray_image))
+    elif "glcm" == ext:
+      all_extract.append(extract_func[ext](gaussian_blur))
+    elif "lbp" == ext:
+        all_extract.append(extract_func[ext](gray_image))
+
+  return np.concatenate(tuple(all_extract), axis=1)
+
+def lbp_extraction(gray_image):
+    # Define LBP parameters
+    radius = 1
+    n_points = 8 * radius
+    METHOD = 'uniform' # Other methods include 'default', 'ror', 'var'
+
+    # Compute LBP
+    lbp_image = local_binary_pattern(gray_image, n_points, radius, method=METHOD)
+    lbp_image /= 255.0
+    lbp_image = np.ravel(lbp_image)
+    lbp_image = lbp_image.reshape((1, lbp_image.shape[0]))
+
+    return lbp_image
 
 
 def canny_image(gray_image):
