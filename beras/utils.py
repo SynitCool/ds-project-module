@@ -25,6 +25,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.preprocessing import label_binarize
 
+from skimage.feature import local_binary_pattern
+
 from config import *
 
 
