@@ -11,6 +11,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import roc_auc_score, roc_curve
 from sklearn.preprocessing import label_binarize
+from sklearn.model_selection import cross_val_predict
 
 from torch.utils.data import DataLoader, TensorDataset
 from torch import nn
@@ -34,10 +35,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class TrainingNoSplit:
     def __init__(
-            self, 
-            train_preprocessing: Preprocessing, 
+            self,
+            train_preprocessing: Preprocessing,
             val_preprocessing: Preprocessing,
-            test_preprocessing: Preprocessing, 
+            test_preprocessing: Preprocessing,
             model_name: dict[str, dict],
             alias: str = ''):
         # private
@@ -80,20 +81,20 @@ class TrainingNoSplit:
       fpr_test = test["fpr"]
       tpr_test = test["tpr"]
       roc_auc_test = test["roc_auc"]
-      
+
       plt.figure(figsize=(8, 6))
       plt.plot([0, 1], [0, 1], 'k--', lw=2)  # Diagonal line
 
       #Plot for each set
       for fpr, tpr, roc_auc, set_name in zip(
-          [fpr_train, fpr_val, fpr_test], 
-           [tpr_train, tpr_val, tpr_test], 
-            [roc_auc_train, roc_auc_val, roc_auc_test], 
+          [fpr_train, fpr_val, fpr_test],
+           [tpr_train, tpr_val, tpr_test],
+            [roc_auc_train, roc_auc_val, roc_auc_test],
              ['train','val','test']):
-          
+
           plt.plot(fpr["micro"], tpr["micro"],
               label=f'micro-average {set_name} ROC curve (area = {roc_auc["micro"]:0.2f})')
-      
+
       plt.xlim([0.0, 1.0])
       plt.ylim([0.0, 1.05])
       plt.xlabel('False Positive Rate')
@@ -132,7 +133,7 @@ class TrainingNoSplit:
                 metrics = func(y_train, y_pred_train, average=None)
                 for i, met in enumerate(metrics):
                     train_metrics[f"{fname}_{LABEL_CONVERTER[str(i)]}"] = met
-            
+
             confusion_matrix_train = confusion_matrix(y_train, y_pred_train)
 
             train_metrics = pd.DataFrame(train_metrics)
@@ -148,12 +149,12 @@ class TrainingNoSplit:
                 metrics = func(y_val, y_pred_val, average=None)
                 for i, met in enumerate(metrics):
                     val_metrics[f"{fname}_{LABEL_CONVERTER[str(i)]}"] = met
-            
+
             confusion_matrix_val = confusion_matrix(y_val, y_pred_val)
 
             val_metrics = pd.DataFrame(val_metrics)
             confusion_matrix_val = pd.DataFrame(confusion_matrix_val)
-            
+
             # TEST
             y_pred_test = mdl.predict(X_test)
             test_metrics = {
@@ -164,7 +165,7 @@ class TrainingNoSplit:
                 metrics = func(y_test, y_pred_test, average=None)
                 for i, met in enumerate(metrics):
                     test_metrics[f"{fname}_{LABEL_CONVERTER[str(i)]}"] = met
-            
+
             confusion_matrix_test = confusion_matrix(y_test, y_pred_test)
 
             test_metrics = pd.DataFrame(test_metrics)
@@ -176,14 +177,14 @@ class TrainingNoSplit:
 
             val_metrics.to_excel(f"{name}_val_metric.xlsx", index=False)
             confusion_matrix_val.to_excel(f"{name}_confusion_matrix_val.xlsx", index=False)
-            
+
             test_metrics.to_excel(f"{name}_test_metric.xlsx", index=False)
             confusion_matrix_test.to_excel(f"{name}_confusion_matrix_test.xlsx", index=False)
 
             # save roc
             save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_train")
             save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_val")
-            save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_test") 
+            save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_test")
 
             # plot roc auc
             fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, mdl.predict_proba(X_train))
@@ -191,12 +192,12 @@ class TrainingNoSplit:
             fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, mdl.predict_proba(X_test))
 
             self.__plot_roc_auc(
-                train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train}, 
+                train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train},
                 val={"fpr": fpr_val, "tpr": tpr_val, "roc_auc": roc_auc_val},
                 test={"fpr": fpr_test, "tpr": tpr_test, "roc_auc": roc_auc_test},
                 name=name
             )
-        
+
     def train_test_method(self):
         X_train = self.__train_preprocessing.get_X()
         y_train = self.__train_preprocessing.get_y()
@@ -245,7 +246,7 @@ class TrainingNoSplit:
                 metrics = func(y_train, y_pred_train, average=None)
                 for i, met in enumerate(metrics):
                     train_metrics[f"{fname}_{LABEL_CONVERTER[str(i)]}"] = met
-            
+
             confusion_matrix_train = confusion_matrix(y_train, y_pred_train)
 
             train_metrics = pd.DataFrame(train_metrics)
@@ -261,12 +262,12 @@ class TrainingNoSplit:
                 metrics = func(y_val, y_pred_val, average=None)
                 for i, met in enumerate(metrics):
                     val_metrics[f"{fname}_{LABEL_CONVERTER[str(i)]}"] = met
-            
+
             confusion_matrix_val = confusion_matrix(y_val, y_pred_val)
 
             val_metrics = pd.DataFrame(val_metrics)
             confusion_matrix_val = pd.DataFrame(confusion_matrix_val)
-            
+
             # TEST
             y_pred_test = mdl.predict(X_test)
             test_metrics = {
@@ -277,7 +278,7 @@ class TrainingNoSplit:
                 metrics = func(y_test, y_pred_test, average=None)
                 for i, met in enumerate(metrics):
                     test_metrics[f"{fname}_{LABEL_CONVERTER[str(i)]}"] = met
-            
+
             confusion_matrix_test = confusion_matrix(y_test, y_pred_test)
 
             test_metrics = pd.DataFrame(test_metrics)
@@ -289,7 +290,7 @@ class TrainingNoSplit:
 
             val_metrics.to_excel(f"{name}_{self.__alias}_val_metric.xlsx", index=False)
             confusion_matrix_val.to_excel(f"{name}_{self.__alias}_confusion_matrix_val.xlsx", index=False)
-            
+
             test_metrics.to_excel(f"{name}_{self.__alias}_test_metric.xlsx", index=False)
             confusion_matrix_test.to_excel(f"{name}_{self.__alias}_confusion_matrix_test.xlsx", index=False)
 
@@ -304,7 +305,7 @@ class TrainingNoSplit:
             fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, mdl.predict_proba(X_test))
 
             self.__plot_roc_auc(
-                train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train}, 
+                train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train},
                 val={"fpr": fpr_val, "tpr": tpr_val, "roc_auc": roc_auc_val},
                 test={"fpr": fpr_test, "tpr": tpr_test, "roc_auc": roc_auc_test},
                 name=name
@@ -332,10 +333,75 @@ class Training:
         raise Exception("You have insufficient data to training the data! Please add more data!")
 
 
-    def train_test_method_grid_search(self, cv):
-        raise Exception("Train test using grid search is not supported yet!")
-        X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=TRAIN_70_30_PORTION, random_state=42)
-        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=VAL_TEST_70_30_PORTION, random_state=42)
+    def train_test_method_cross_val(self):
+        for name, spec in self.__model_name.items():
+            model = spec["model"]
+
+            y_pred = cross_val_predict(spec["model"], self.X , self.y)
+            y_proba = cross_val_predict(spec["model"], self.X , self.y, method='predict_proba')
+
+            train_metrics = {
+                "Accuracy": [accuracy_score(self.y, y_pred)]
+            }
+
+            func_metric = [f1_score, recall_score, precision_score]
+            func_name = ["F1-Score", "Recall", "Precision"]
+            for func, fname in zip(func_metric, func_name):
+                metrics = func(self.y, y_pred, average=None)
+                for i, met in enumerate(metrics):
+                    train_metrics[f"{fname}_{LABEL_CONVERTER[str(i)]}"] = met
+
+            confusion_matrix_train = confusion_matrix(self.y, y_pred)
+
+            train_metrics = pd.DataFrame(train_metrics)
+            confusion_matrix_train = pd.DataFrame(confusion_matrix_train)
+
+            # save to excel
+            train_metrics.to_excel(f"{name}_{self.__alias}_train_metric.xlsx", index=False)
+            confusion_matrix_train.to_excel(f"{name}_{self.__alias}_confusion_matrix_train.xlsx", index=False)
+
+            # save roc
+            # Use cross-validated probabilities for the training set ROC curve
+            save_roc_multiclass(self.y, y_proba, f"{name}_{self.__alias}_train")
+
+            # plot roc auc
+            # Use cross-validated probabilities for the training set ROC AUC calculation
+            fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(self.y, y_proba)
+
+            self.__plot_roc_auc(
+                train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train},
+                val={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train},
+                test={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train},
+                name=name
+            )
+
+
+    def train_test_method_grid_search(self, cv, portion="70_20_10"):
+        portion_ratio_1 = 0
+        portion_ratio_2 = 0
+        if portion == "70_20_10":
+          portion_ratio_1 = 0.33
+          portion_ratio_2 = 0.33
+        elif portion == "60_20_20":
+          portion_ratio_1 = 0.4
+          portion_ratio_2 = 0.5
+        elif portion == "50_25_25":
+          portion_ratio_1 = 0.5
+          portion_ratio_2 = 0.5
+        elif portion == "70_15_15":
+          portion_ratio_1 = 0.3
+          portion_ratio_2 = 0.5
+        elif portion == "80_10_10":
+          portion_ratio_1 = 0.2
+          portion_ratio_2 = 0.5
+        elif portion == "90_5_5":
+          portion_ratio_1 = 0.5
+          portion_ratio_2 = 0.5
+        else:
+          raise Exception(f"Invalid portion ratio for {portion}")
+
+        X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=portion_ratio_1, random_state=42)
+        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=portion_ratio_2, random_state=42)
 
         self.__minimum_dataset(y_train)
         self.__minimum_dataset(y_val)
@@ -558,7 +624,7 @@ class Training:
       plt.legend(loc="lower right")
       plt.show()
 
-    def train_test_method(self, portion="70_20_10"):
+    def train_test_method(self, portion="70_20_10", show_lime_shape: bool = False):
         portion_ratio_1 = 0
         portion_ratio_2 = 0
         if portion == "70_20_10":
@@ -566,6 +632,18 @@ class Training:
           portion_ratio_2 = 0.33
         elif portion == "60_20_20":
           portion_ratio_1 = 0.4
+          portion_ratio_2 = 0.5
+        elif portion == "50_25_25":
+          portion_ratio_1 = 0.5
+          portion_ratio_2 = 0.5
+        elif portion == "70_15_15":
+          portion_ratio_1 = 0.3
+          portion_ratio_2 = 0.5
+        elif portion == "80_10_10":
+          portion_ratio_1 = 0.2
+          portion_ratio_2 = 0.5
+        elif portion == "90_5_5":
+          portion_ratio_1 = 0.5
           portion_ratio_2 = 0.5
         else:
           raise Exception(f"Invalid portion ratio for {portion}")
@@ -666,7 +744,7 @@ class Training:
                     X_train_summary = shap.kmeans(X_train, 50)
                     explainer = shap.KernelExplainer(mdl.predict_proba, X_train_summary)
                     shap_values = explainer.shap_values(X_test)
-    
+
                     # Summary plot - now this should work correctly
                     print(f"SHAP Summary Plot for {name}")
                     shap.summary_plot(shap_values, X_test, feature_names=[f'feature_{i}' for i in range(X_train.shape[1])], class_names=[LABEL_CONVERTER[str(i)] for i in range(NUM_CLASS)])
