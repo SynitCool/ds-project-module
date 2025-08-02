@@ -379,7 +379,7 @@ class Training:
             )
 
 
-    def train_test_method_grid_search(self, cv, portion="70_20_10"):
+    def train_test_method_grid_search(self, portion="70_20_10"):
         portion_ratio_1 = 0
         portion_ratio_2 = 0
         if portion == "70_20_10":
@@ -414,7 +414,7 @@ class Training:
         model = {}
 
         for name, spec in self.__model_name.items():
-            model[name] = GridSearchCV(spec["model"], spec["param"], cv=cv)
+            model[name] = GridSearchCV(spec["model"], spec["param"])
 
         for name, mdl in model.items():
             mdl.fit(X_train, y_train)
@@ -470,19 +470,19 @@ class Training:
             confusion_matrix_test = pd.DataFrame(confusion_matrix_test)
 
             # save to excel
-            train_metrics.to_excel(f"{name}_{self.__alias}_train_metric.xlsx", index=False)
-            confusion_matrix_train.to_excel(f"{name}_{self.__alias}_confusion_matrix_train.xlsx", index=False)
+            train_metrics.to_excel(f"{name}_{portion}_{self.__alias}_train_metric.xlsx", index=False)
+            confusion_matrix_train.to_excel(f"{name}_{portion}_{self.__alias}_confusion_matrix_train.xlsx", index=False)
 
-            val_metrics.to_excel(f"{name}_{self.__alias}_val_metric.xlsx", index=False)
-            confusion_matrix_val.to_excel(f"{name}_{self.__alias}_confusion_matrix_val.xlsx", index=False)
+            val_metrics.to_excel(f"{name}_{portion}_{self.__alias}_val_metric.xlsx", index=False)
+            confusion_matrix_val.to_excel(f"{name}_{portion}_{self.__alias}_confusion_matrix_val.xlsx", index=False)
 
-            test_metrics.to_excel(f"{name}_{self.__alias}_test_metric.xlsx", index=False)
-            confusion_matrix_test.to_excel(f"{name}_{self.__alias}_confusion_matrix_test.xlsx", index=False)
+            test_metrics.to_excel(f"{name}_{portion}_{self.__alias}_test_metric.xlsx", index=False)
+            confusion_matrix_test.to_excel(f"{name}_{portion}_{self.__alias}_confusion_matrix_test.xlsx", index=False)
 
             # save roc
-            save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{self.__alias}_train")
-            save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{self.__alias}_val")
-            save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{self.__alias}_test")
+            save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{portion}_{self.__alias}_train")
+            save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{portion}_{self.__alias}_val")
+            save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{portion}_{self.__alias}_test")
 
             # plot roc auc
             fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, mdl.predict_proba(X_train))
@@ -658,14 +658,6 @@ class Training:
         X_train_CNN, X_temp_CNN, y_train_CNN, y_temp_CNN = train_test_split(self.X_CNN, self.y_CNN, test_size=portion_ratio_1, random_state=42)
         X_val_CNN, X_test_CNN, y_val_CNN, y_test_CNN = train_test_split(X_temp_CNN, y_temp_CNN, test_size=portion_ratio_2, random_state=42)
 
-        self.__minimum_dataset(y_train)
-        self.__minimum_dataset(y_val)
-        self.__minimum_dataset(y_test)
-        self.__minimum_dataset(y_train_CNN)
-        self.__minimum_dataset(y_val_CNN)
-        self.__minimum_dataset(y_test_CNN)
-
-
         model = {}
         for name in self.__model_name:
             if name == "LogisticRegression":
@@ -680,6 +672,7 @@ class Training:
 
         for name, mdl in model.items():
             if name == "CNN":
+                continue
                 X_train_CNN = X_train_CNN.reshape((X_train_CNN.shape[0], *X_train_CNN.shape[1:][::-1]))
                 X_val_CNN = X_val_CNN.reshape((X_val_CNN.shape[0], *X_val_CNN.shape[1:][::-1]))
                 X_test_CNN = X_test_CNN.reshape((X_test_CNN.shape[0], *X_test_CNN.shape[1:][::-1]))
