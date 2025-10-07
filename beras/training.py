@@ -315,7 +315,7 @@ class TrainingNoSplit:
 
 
 class Training:
-    def __init__(self, preprocessing: Preprocessing, model_name: dict[str, dict], alias:str =''):
+    def __init__(self, preprocessing: Preprocessing, model_name: dict, alias:str =''):
         # private
         self.__preprocessing = preprocessing
         self.__model_name = model_name
@@ -856,3 +856,226 @@ class Training:
                 test={"fpr": fpr_test, "tpr": tpr_test, "roc_auc": roc_auc_test},
                 name=name+portion
             )
+
+    def train_test_method_custom_model(self, portion="70_20_10", show_lime_shap: bool = False):
+        portion_ratio_1 = 0
+        portion_ratio_2 = 0
+        if portion == "70_20_10":
+          portion_ratio_1 = 0.33
+          portion_ratio_2 = 0.33
+        elif portion == "60_20_20":
+          portion_ratio_1 = 0.4
+          portion_ratio_2 = 0.5
+        elif portion == "50_25_25":
+          portion_ratio_1 = 0.5
+          portion_ratio_2 = 0.5
+        elif portion == "70_15_15":
+          portion_ratio_1 = 0.3
+          portion_ratio_2 = 0.5
+        elif portion == "80_10_10":
+          portion_ratio_1 = 0.2
+          portion_ratio_2 = 0.5
+        elif portion == "90_5_5":
+          portion_ratio_1 = 0.5
+          portion_ratio_2 = 0.5
+        else:
+          raise Exception(f"Invalid portion ratio for {portion}")
+
+        X_train, X_temp, y_train, y_temp = train_test_split(self.X, self.y, test_size=portion_ratio_1, random_state=42)
+        X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=portion_ratio_2, random_state=42)
+
+
+        X_train_CNN, X_temp_CNN, y_train_CNN, y_temp_CNN = train_test_split(self.X_CNN, self.y_CNN, test_size=portion_ratio_1, random_state=42)
+        X_val_CNN, X_test_CNN, y_val_CNN, y_test_CNN = train_test_split(X_temp_CNN, y_temp_CNN, test_size=portion_ratio_2, random_state=42)
+
+        model = {}
+        for name in self.__model_name:
+            model[name] = self.__model_name[name]
+
+        for name, mdl in model.items():
+            if name == "CNN":
+                continue
+                X_train_CNN = X_train_CNN.reshape((X_train_CNN.shape[0], *X_train_CNN.shape[1:][::-1]))
+                X_val_CNN = X_val_CNN.reshape((X_val_CNN.shape[0], *X_val_CNN.shape[1:][::-1]))
+                X_test_CNN = X_test_CNN.reshape((X_test_CNN.shape[0], *X_test_CNN.shape[1:][::-1]))
+
+                X_train_CNN = torch.from_numpy(X_train_CNN).to(torch.float32)
+                X_val_CNN = torch.from_numpy(X_val_CNN).to(torch.float32)
+                X_test_CNN = torch.from_numpy(X_test_CNN).to(torch.float32)
+
+                y_train_CNN = torch.from_numpy(y_train)
+                y_val_CNN = torch.from_numpy(y_val)
+                y_test_CNN = torch.from_numpy(y_test)
+
+            # Fit Model
+            if name == "CNN":
+                dataset = TensorDataset(X_train_CNN, y_train_CNN)
+                train_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
+
+                criterion = nn.CrossEntropyLoss()
+                optimizer = torch.optim.Adam(mdl.parameters(), lr=LR)
+
+                mdl.train_model(
+                    train_loader=train_loader,
+                    criterion=criterion,
+                    optimizer=optimizer,
+                    epochs=EPOCHS,
+                    device=device
+                )
+            else:
+                mdl.fit(X_train, y_train)
+
+
+            # Coef & Feature Important
+            if "LogisticRegression" in name:
+                imp = mdl.coef_
+            elif "SVM" in name:
+                imp = mdl.dual_coef_
+            elif "RF" in name:
+                imp = mdl.feature_importances_
+                imp = imp.reshape((1, imp.shape[0]))
+
+            if name != "CNN":
+              imp = pd.DataFrame(imp)
+              imp.to_excel(f"{name}_{self.__alias}_{portion}_coef_feature_importance.xlsx", index=False)
+
+            # LIME and SHAP for non-CNN models
+            if show_lime_shap:
+                if name != "CNN":
+                    # LIME
+                    print(f"--- LIME Analysis for {name} ---")
+                    try:
+                        explainer = lime.lime_tabular.LimeTabularExplainer(
+                            X_train,
+                            mode='classification',
+                            class_names=[LABEL_CONVERTER[str(i)] for i in range(NUM_CLASS)],
+                            feature_names=[f'feature_{i}' for i in range(X_train.shape[1])]
+                        )
+                        exp = explainer.explain_instance(X_test[0], mdl.predict_proba, num_features=5)
+                        exp.show_in_notebook(show_table=True)
+                    except:
+                        print("Error has occured to create lime analysis, so we're skipping that. It could be that you need more data!")
+    
+                    # SHAP
+                    print(f"\n--- SHAP Analysis for {name} ---")
+                    try:
+                        # Summarize the background data for KernelExplainer
+                        X_train_summary = shap.kmeans(X_train, 50)
+                        explainer = shap.KernelExplainer(mdl.predict_proba, X_train_summary)
+                        shap_values = explainer.shap_values(X_test)
+    
+                        # Summary plot - now this should work correctly
+                        print(f"SHAP Summary Plot for {name}")
+                        shap.summary_plot(shap_values, X_test, feature_names=[f'feature_{i}' for i in range(X_train.shape[1])], class_names=[LABEL_CONVERTER[str(i)] for i in range(NUM_CLASS)])
+                    except:
+                        print("Error has occured to create shap analysis, so we're skipping that. It could be that you need more data!")
+
+
+            # TRAIN
+            if name == "CNN":
+                y_pred_train, y_pred_train_output = mdl.predict(X_train_CNN, device=device)
+                y_pred_train = y_pred_train.cpu().numpy()
+                y_pred_train_output = y_pred_train_output.cpu().numpy()
+            else:
+                y_pred_train = mdl.predict(X_train)
+
+            train_metrics = {
+                "Accuracy": [accuracy_score(y_train, y_pred_train)]
+            }
+
+            func_metric = [f1_score, recall_score, precision_score]
+            func_name = ["F1-Score", "Recall", "Precision"]
+            for func, fname in zip(func_metric, func_name):
+                metrics = func(y_train, y_pred_train, average=None)
+                for i, met in enumerate(metrics):
+                    train_metrics[f"{fname}_{LABEL_CONVERTER[str(i)]}"] = met
+
+            confusion_matrix_train = confusion_matrix(y_train, y_pred_train)
+
+            train_metrics = pd.DataFrame(train_metrics)
+            confusion_matrix_train = pd.DataFrame(confusion_matrix_train)
+
+            # VAL
+            if name == "CNN":
+                y_pred_val, y_pred_val_output = mdl.predict(X_val_CNN, device=device)
+                y_pred_val = y_pred_val.cpu().numpy()
+                y_pred_val_output = y_pred_val_output.cpu().numpy()
+            else:
+                y_pred_val = mdl.predict(X_val)
+
+            val_metrics = {
+                "Accuracy": [accuracy_score(y_val, y_pred_val)]
+            }
+
+            for func, fname in zip(func_metric, func_name):
+                metrics = func(y_val, y_pred_val, average=None)
+                for i, met in enumerate(metrics):
+                    val_metrics[f"{fname}_{LABEL_CONVERTER[str(i)]}"] = met
+
+            confusion_matrix_val = confusion_matrix(y_val, y_pred_val)
+
+            val_metrics = pd.DataFrame(val_metrics)
+            confusion_matrix_val = pd.DataFrame(confusion_matrix_val)
+
+            # TEST
+            # VAL
+            if name == "CNN":
+                y_pred_test, y_pred_test_output = mdl.predict(X_test_CNN, device=device)
+                y_pred_test = y_pred_test.cpu().numpy()
+                y_pred_test_output = y_pred_test_output.cpu().numpy()
+            else:
+                y_pred_test = mdl.predict(X_test)
+
+            test_metrics = {
+                "Accuracy": [accuracy_score(y_test, y_pred_test)],
+            }
+
+            func_metric = [f1_score, recall_score, precision_score]
+            func_name = ["F1-Score", "Recall", "Precision"]
+            for func, fname in zip(func_metric, func_name):
+                metrics = func(y_test, y_pred_test, average=None)
+                for i, met in enumerate(metrics):
+                    test_metrics[f"{fname}_{LABEL_CONVERTER[str(i)]}"] = met
+
+            confusion_matrix_test = confusion_matrix(y_test, y_pred_test)
+
+            test_metrics = pd.DataFrame(test_metrics)
+            confusion_matrix_test = pd.DataFrame(confusion_matrix_test)
+
+            # save to excel
+            train_metrics.to_excel(f"{name}_{self.__alias}_{portion}_train_metric.xlsx", index=False)
+            confusion_matrix_train.to_excel(f"{name}_{self.__alias}_confusion_matrix_{portion}_train.xlsx", index=False)
+
+            val_metrics.to_excel(f"{name}_{self.__alias}_{portion}_val_metric.xlsx", index=False)
+            confusion_matrix_val.to_excel(f"{name}_{self.__alias}_confusion_matrix_{portion}_val.xlsx", index=False)
+
+            test_metrics.to_excel(f"{name}_{self.__alias}_{portion}_test_metric.xlsx", index=False)
+            confusion_matrix_test.to_excel(f"{name}_{self.__alias}_confusion_matrix_{portion}_test.xlsx", index=False)
+
+            # save roc
+            if name == "CNN":
+                save_roc_multiclass(y_train, y_pred_train_output, f"{name}_{self.__alias}_{portion}_train")
+                save_roc_multiclass(y_val, y_pred_val_output, f"{name}_{self.__alias}_{portion}_val")
+                save_roc_multiclass(y_test, y_pred_test_output, f"{name}_{self.__alias}_{portion}_test")
+            else:
+                save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{self.__alias}_{portion}_train")
+                save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{self.__alias}_{portion}_val")
+                save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{self.__alias}_{portion}_test")
+
+            # plot roc auc
+            if name == "CNN":
+                fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, y_pred_train_output)
+                fpr_val, tpr_val, roc_auc_val = self.__calc_roc_auc(y_val, y_pred_val_output)
+                fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, y_pred_test_output)
+            else:
+                fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, mdl.predict_proba(X_train))
+                fpr_val, tpr_val, roc_auc_val = self.__calc_roc_auc(y_val, mdl.predict_proba(X_val))
+                fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, mdl.predict_proba(X_test))
+
+            self.__plot_roc_auc(
+                train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train},
+                val={"fpr": fpr_val, "tpr": tpr_val, "roc_auc": roc_auc_val},
+                test={"fpr": fpr_test, "tpr": tpr_test, "roc_auc": roc_auc_test},
+                name=name+portion
+            )
+
