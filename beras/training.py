@@ -940,7 +940,7 @@ class Training:
               imp.to_excel(f"{name}_{self.__alias}_{portion}_coef_feature_importance.xlsx", index=False)
 
             # LIME and SHAP for non-CNN models
-            if show_lime_shap:
+            if show_lime_shap and "VotingClassifier" != name:
                 if name != "CNN":
                     # LIME
                     print(f"--- LIME Analysis for {name} ---")
@@ -1058,9 +1058,10 @@ class Training:
                 save_roc_multiclass(y_val, y_pred_val_output, f"{name}_{self.__alias}_{portion}_val")
                 save_roc_multiclass(y_test, y_pred_test_output, f"{name}_{self.__alias}_{portion}_test")
             else:
-                save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{self.__alias}_{portion}_train")
-                save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{self.__alias}_{portion}_val")
-                save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{self.__alias}_{portion}_test")
+                if "VotingClassifier" != name:
+                    save_roc_multiclass(y_train, mdl.predict_proba(X_train), f"{name}_{self.__alias}_{portion}_train")
+                    save_roc_multiclass(y_val, mdl.predict_proba(X_val), f"{name}_{self.__alias}_{portion}_val")
+                    save_roc_multiclass(y_test, mdl.predict_proba(X_test), f"{name}_{self.__alias}_{portion}_test")
 
             # plot roc auc
             if name == "CNN":
@@ -1068,9 +1069,10 @@ class Training:
                 fpr_val, tpr_val, roc_auc_val = self.__calc_roc_auc(y_val, y_pred_val_output)
                 fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, y_pred_test_output)
             else:
-                fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, mdl.predict_proba(X_train))
-                fpr_val, tpr_val, roc_auc_val = self.__calc_roc_auc(y_val, mdl.predict_proba(X_val))
-                fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, mdl.predict_proba(X_test))
+                if "VotingClassifier" != name:
+                    fpr_train, tpr_train, roc_auc_train = self.__calc_roc_auc(y_train, mdl.predict_proba(X_train))
+                    fpr_val, tpr_val, roc_auc_val = self.__calc_roc_auc(y_val, mdl.predict_proba(X_val))
+                    fpr_test, tpr_test, roc_auc_test = self.__calc_roc_auc(y_test, mdl.predict_proba(X_test))
 
             self.__plot_roc_auc(
                 train={"fpr": fpr_train, "tpr": tpr_train, "roc_auc": roc_auc_train},
